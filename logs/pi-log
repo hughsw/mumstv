@@ -1,0 +1,92 @@
+
+  sudo sysctl net.ipv4.ip_forward=1
+
+  sudo ssdpy-discover ssdp:all
+
+ fastapi dev --reload --host 192.168.253.11 --forwarded-allow-ips 192.168.253.1 main.py
+
+  curl -v -sS -4 -m 5 "http://192.168.58.113:8060/query/tv-channels"
+
+  curl -v -sS -4 -m 5 "http://192.168.58.108:8060/query/tv-channels"
+
+  curl -v -sS "http://192.168.58.108:8060/query/tv-channels"
+
+  curl -v -sS "http://192.168.58.100:8060/query/tv-active-channel"
+  curl -v -sS "http://192.168.58.108:8060/query/tv-active-channel"
+  curl -v -sS -d '' "http://192.168.58.108:8060/keypress/Home"
+  curl -v -sS -d '' "http://192.168.58.108:8060/keypress/PowerOn"
+  curl -v -sS -d '' "http://192.168.58.108:8060/keypress/Power"
+
+  curl -v -sS "http://192.168.58.100:8060/query/tv-active-channel"
+
+  curl -v -sS "http://192.168.58.100:8060/query/apps"
+  curl -v -sS "http://192.168.58.100:8060/query/active-app"
+  curl -v -sS -d '' "http://192.168.58.100:8060/keypress/Home"
+
+  curl -v -sS -4 --connect-timeout 7 "http://redirect.hodain.net:30060/query/tv-active-channel"
+
+  curl -v -sS -4 -H "Host: 192.168.58.108:8060" "http://redirect.hodain.net:30060/query/tv-active-channel"
+  curl -v -sS -4 -H "Host: 192.168.58.108:8060" -d '' "http://redirect.hodain.net:30060/keypress/PowerOn"
+  curl -v -sS -4 -H "Host: 192.168.58.108:8060" -d '' "http://redirect.hodain.net:30060/keypress/PowerOff"
+  curl -v -sS -4 -H "Host: 192.168.58.108:8060" -d '' "http://redirect.hodain.net:30060/keypress/Home"
+
+
+  ssh -p 30022 pi@redirect.hodain.net ls -la
+
+  sudo nmap --noninteractive  -sS -p T:8060 192.168.58.108
+
+  sudo nmap --noninteractive -sU -sS -p T:30060 redirect.hodain.net
+
+  sudo nmap --noninteractive -sU -sS -p U:53,T:22,2222,25,53,80,443,465,587,993,995,4190 15.204.238.249
+
+
+  curl -v -sS -d ''  "http://192.168.58.108:8060/"
+
+  curl -v -sS -d ''  "http://192.168.58.108:8060/"
+
+
+{'cache-control': 'max-age=3600',
+ 'ext': '',
+ 'location': 'http://192.168.58.108:8060/',
+ 'server': 'Roku/15.1.4 UPnP/1.0 Roku/15.1.4',
+ 'st': 'upnp:rootdevice',
+ 'usn': 'uuid:28002000-0000-1000-8041-78669dcceb63::upnp:rootdevice',
+ 'wakeup': 'MAC=78:66:9d:cc:eb:63;Timeout=10'}
+{'cache-control': 'max-age=3600',
+ 'device-group.roku.com': 'E3E7288623F19FA4030E',
+ 'ext': '',
+ 'location': 'http://192.168.58.108:8060/',
+ 'server': 'Roku/15.1.4 UPnP/1.0 Roku/15.1.4',
+ 'st': 'roku:ecp',
+ 'usn': 'uuid:roku:ecp:X0200065PNYN',
+ 'wakeup': 'MAC=78:66:9d:cc:eb:63;Timeout=10'}
+{'cache-control': 'max-age=3600',
+ 'ext': '',
+ 'location': 'http://192.168.58.108:8060/dial/dd.xml',
+ 'server': 'Roku/15.1.4 UPnP/1.0 Roku/15.1.4',
+ 'st': 'urn:dial-multiscreen-org:service:dial:1',
+ 'usn': 'uuid:28002000-0000-1000-8041-78669dcceb63::urn:dial-multiscreen-org:service:dial:1',
+ 'wakeup': 'MAC=78:66:9d:cc:eb:63;Timeout=10'}
+
+{'cache-control': 'max-age=3600',
+ 'ext': '',
+ 'location': 'http://192.168.58.100:8060/',
+ 'server': 'Roku/15.1.4 UPnP/1.0 Roku/15.1.4',
+ 'st': 'upnp:rootdevice',
+ 'usn': 'uuid:28000000-0000-1000-8003-f0a3b203db8f::upnp:rootdevice',
+ 'wakeup': 'MAC=f0:a3:b2:03:db:8f;Timeout=10'}
+{'cache-control': 'max-age=3600',
+ 'device-group.roku.com': 'E3E7288623F19FA4030E',
+ 'ext': '',
+ 'location': 'http://192.168.58.100:8060/',
+ 'server': 'Roku/15.1.4 UPnP/1.0 Roku/15.1.4',
+ 'st': 'roku:ecp',
+ 'usn': 'uuid:roku:ecp:X000003AFRLD',
+ 'wakeup': 'MAC=f0:a3:b2:03:db:8f;Timeout=10'}
+{'cache-control': 'max-age=3600',
+ 'ext': '',
+ 'location': 'http://192.168.58.100:8060/dial/dd.xml',
+ 'server': 'Roku/15.1.4 UPnP/1.0 Roku/15.1.4',
+ 'st': 'urn:dial-multiscreen-org:service:dial:1',
+ 'usn': 'uuid:28000000-0000-1000-8003-f0a3b203db8f::urn:dial-multiscreen-org:service:dial:1',
+ 'wakeup': 'MAC=f0:a3:b2:03:db:8f;Timeout=10'}

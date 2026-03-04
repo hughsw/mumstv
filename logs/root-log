@@ -1,0 +1,44 @@
+
+
+  systemctl enable --now mumstv-ssdp@/root/wireguard/wg-iot_11.conf.service
+
+  echo  $(systemd-escape --template mumstv-ssdp@.service "/root/wireguard/wg-iot_11.conf")
+
+  systemctl daemon-reload
+
+  systemctl enable --now  $(systemd-escape --template mumstv-ssdp@.service "/root/wireguard/wg-iot_11.conf")
+
+  systemctl restart  $(systemd-escape --template mumstv-ssdp@.service "/root/wireguard/wg-iot_11.conf")
+
+  systemctl disable --now  $(systemd-escape --template mumstv-ssdp@.service "/root/wireguard/wg-iot_11.conf")
+
+
+  $(systemd-escape --template example_template@.service "alice bob carol")
+
+
+    route add -host 15.204.94.136 gw 192.168.253.1
+
+  nft -a list ruleset
+  wg-quick up /root/wireguard/wg-iot_11.conf
+  wg-quick down /root/wireguard/wg-iot_11.conf
+
+
+      apt-get update
+      apt-get install wireguard wireguard-tools
+      apt-get install resolvconf
+
+
+# ip route show table all
+192.168.58.0/24 dev wlan0 proto kernel scope link src 192.168.58.113 metric 600 
+broadcast 192.168.58.255 dev wlan0 table local proto kernel scope link src 192.168.58.113 
+default via 192.168.58.1 dev wlan0 proto dhcp src 192.168.58.113 metric 600 
+fe80::/64 dev wlan0 proto kernel metric 256 pref medium
+local 192.168.58.113 dev wlan0 table local proto kernel scope host src 192.168.58.113 
+local fe80::ba27:ebff:fe7c:4a78 dev wlan0 table local proto kernel metric 0 pref medium
+multicast ff00::/8 dev wlan0 table local proto kernel metric 256 pref medium
+
+broadcast 127.255.255.255 dev lo table local proto kernel scope link src 127.0.0.1 
+local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 
+local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1 
+local ::1 dev lo table local proto kernel metric 0 pref medium
+
