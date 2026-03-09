@@ -1,0 +1,29 @@
+  /home/pi/work/mumstv:
+  drwxrwxr-x 6 pi pi 4096 Mar  2 14:40 .
+  drwxrwxr-x 4 pi pi 4096 Mar  4 10:45 ..
+  -rwxrwxr-x 1 pi pi 1705 Mar  2 14:40 ids.py
+  -rwxrwxr-x 1 pi pi  244 Mar  1 20:39 ids.py~
+  -rw-rw-r-- 1 pi pi 3017 Feb 28 16:57 main.py
+  -rw-rw-r-- 1 pi pi 2987 Feb 27 15:29 main.py~
+  drwxrwxr-x 2 pi pi 4096 Feb 28 16:57 __pycache__
+  drwxrwxr-x 2 pi pi 4096 Mar  6 13:22 static
+  drwxrwxr-x 2 pi pi 4096 Mar  4 10:45 templates
+  drwxrwxr-x 5 pi pi 4096 Feb 27 13:13 .venv
+
+  /home/pi/work/mumstv/static:
+  drwxrwxr-x 2 pi pi  4096 Mar  6 13:22 .
+  drwxrwxr-x 6 pi pi  4096 Mar  2 14:40 ..
+  -rw-r--r-- 1 pi pi 26277 Mar  1 11:52 pbs.png
+  -rw-r--r-- 1 pi pi  5159 Mar  1 11:44 prime.png
+  -rw-r--r-- 1 pi pi 40237 Mar  6 13:22 screen_eg.jpeg
+  -rw-rw-r-- 1 pi pi  2953 Mar  3 19:52 styles.css
+  -rw-rw-r-- 1 pi pi  2747 Mar  1 20:23 styles.css~
+
+  /home/pi/work/mumstv/templates:
+  drwxrwxr-x 2 pi pi 4096 Mar  4 10:45 .
+  drwxrwxr-x 6 pi pi 4096 Mar  2 14:40 ..
+  -rw-rw-r-- 1 pi pi 4801 Mar  3 14:49 index.html
+  -rw-rw-r-- 1 pi pi 4613 Mar  1 12:29 index.html~
+  -rw-rw-r-- 1 pi pi 4461 Feb 27 22:35 index.html.save
+  -rw-rw-r-- 1 pi pi  671 Mar  1 18:39 scratch
+  -rw-rw-r-- 1 pi pi   96 Feb 27 16:49 scratch~
