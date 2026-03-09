@@ -1,0 +1,13 @@
+
+  python -m venv --system-site-packages .venv
+
+  python --version
+  Python 3.13.5
+
+  source .venv/bin/activate
+
+  python -m ensurepip --upgrade
+
+  echo "*" > .venv/.gitignore
+
+  pip install "fastapi[standard]"

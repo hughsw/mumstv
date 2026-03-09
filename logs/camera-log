@@ -1,6 +1,9 @@
 
-tag=test4_$(date '+%Y-%m-%d-%H%M-%S')
-sudo rpicam-still  --nopreview  --immediate  --quality 80  --shutter 100000  --rotation 180  --width 1920 --height 1080  --flicker-period 8333us --metadata ${tag}.txt  --output ${tag}.jpeg
+  tag=~/work/camera/test4_$(date '+%Y-%m-%d-%H%M-%S')
+  sudo rpicam-still  --nopreview  --immediate  --quality 85  --rotation 180  --width 1920 --height 1080  --flicker-period 8333us --metadata ${tag}.txt  --output ${tag}.jpeg
+
+  tag=test4_$(date '+%Y-%m-%d-%H%M-%S')
+  sudo rpicam-still  --nopreview  --immediate  --quality 80  --shutter 100000  --rotation 180  --width 1920 --height 1080  --flicker-period 8333us --metadata ${tag}.txt  --output ${tag}.jpeg
 
 
   tag=test4_$(date '+%Y-%m-%d-%H%M-%S')
