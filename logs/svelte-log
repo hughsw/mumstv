@@ -1,0 +1,23 @@
+
+  npx sv create mumstv
+    or
+  npx sv@0.12.5 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" tailwindcss="plugins:typography,forms" --install npm mumstv
+
+◇  What's next? ───────────────────────────────╮
+│                                              │
+│  📁 Project steps                            │
+│                                              │
+│    1: cd mumstv                              │
+│    2: npm run dev -- --open                  │
+│                                              │
+│  To close the dev server, hit Ctrl-C         │
+│                                              │
+│  Stuck? Visit us at https://svelte.dev/chat
+
+  npm run dev -- --host
+
+
+
+  cd mumstv
+  npm install
+  npm run dev
