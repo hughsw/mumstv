@@ -1,0 +1,13 @@
+
+  sudo wg-quick up  /home/hugh/work/mumstv/wireguard/wg_mumstv_10.conf
+
+  sudo wg-quick down  /home/hugh/work/mumstv/wireguard/wg_mumstv_10.conf
+
+  sudo ip a
+  echo ; echo
+  sudo wg
+  echo ; echo
+
+  ping -4 -c 3 192.168.23.1
+  echo ; echo
+  ping -6 -c 3 fd00::23:1
