@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', path='/styles.css') }}" />
+
+    <title>Mum's TV</title>
+
+    <script src="https://kit.fontawesome.com/c8fd46674e.js" crossorigin="anonymous"></script>
+    <script>
+      const sendCommand = (command) => {
+        const keypress = '/api/{{site}}/devices/{{device}}/keypress/';
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", keypress + command, true);
+        xhr.send();
+      };
+
+      document.addEventListener("DOMContentLoaded", (event) => {
+        document.addEventListener("keydown", handleKeyPress);
+      });
+      const handleKeyPress = (event) => {
+        if (event.ctrlKey && event.key === "Insert") {
+          sendCommand("PowerOn");
+          return;
+        }
+        if (event.ctrlKey && event.key === "Delete") {
+          sendCommand("PowerOff");
+          return;
+        }
+        switch (event.key) {
+        case "ArrowUp":
+          sendCommand("Up");
+          break;
+        case "ArrowDown":
+          sendCommand("Down");
+          break;
+        case "ArrowLeft":
+          sendCommand("Left");
+          break;
+        case "ArrowRight":
+          sendCommand("Right");
+          break;
+        case "Enter":
+          sendCommand("Select");
+          break;
+        case "Backspace":
+          sendCommand("Back");
+          break;
+        case "Shift":
+          sendCommand("Home");
+          break;
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <div id="remote-container">
+
+      <div class='remote-outer'>
+
+        <!-- remote-outer row 0 -->
+        <div>
+          <h3> Mum's TV</h3> <!-- ' -->
+        </div>
+
+        <div> <!--  style='padding: 3px; background: white;'> -->
+          <button class='account' onclick="login">Login</button>
+        </div>
+
+        <!-- remote-outer row 1 -->
+        <div>
+          <div class="button-row">
+            <!-- <button onclick="sendCommand('PowerOn')"><i class="fas fa-plug-circle-plus"></i></button> -->
+            <button onclick="sendCommand('Power')" style="background-color: #cc3300;"><i class='fas fa-power-off'></i></button>
+            <!-- <button onclick="sendCommand('PowerOff')"><i class="fas fa-plug-circle-minus"></i></button> -->
+          </div>
+
+          <div class="button-row">
+            <button onclick="sendCommand('Back')"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="sendCommand('Home')"><i class='far fa-home'></i></button>
+          </div>
+        </div>
+
+        <div></div>
+
+        <!-- remote-outer row 2 -->
+        <div>
+          <div id="directional-pad">
+            <button id="up" onclick="sendCommand('Up')"><i class="fas fa-angle-up"></i></button>
+            <button id="left" onclick="sendCommand('Left')"><i class="fas fa-angle-left"></i></button>
+            <button id="select" onclick="sendCommand('Select')">OK</button>
+            <button id="right" onclick="sendCommand('Right')"><i class="fas fa-angle-right"></i></button>
+            <button id="down" onclick="sendCommand('Down')"><i class="fas fa-angle-down"></i></button>
+          </div>
+
+          <div class="button-row">
+            <button onclick="sendCommand('InstantReplay')"><i class='fas fa-undo'></i></button>
+            <button onclick="sendCommand('Info')"><i class="fas fa-asterisk"></i></button>
+          </div>
+        </div>
+
+        <div class='vertical-stack'>
+          <button class='volume-up' onclick="sendCommand('VolumeUp')"><i class='fas fa-volume-up'></i></button>
+          <button class='volume-down' onclick="sendCommand('VolumeDown')"><i class='fas fa-volume-down'></i></button>
+          <button class='volume-mute' onclick="sendCommand('VolumeMute')"><i class='fas fa-volume-mute'></i></button>
+        </div>
+
+        <!-- remote-outer row 3 -->
+        <div>
+          <div class="button-row">
+            <button onclick="sendCommand('Rev')"><i class='fas fa-backward'></i></button>
+            <button onclick="sendCommand('Play')"><i class='fas fa-play'></i><i class='fas fa-pause'></i></button>
+            <button onclick="sendCommand('Fwd')"><i class='fas fa-forward'></i></button>
+          </div>
+          <div class="button-row">
+            <button onclick="launch('amazon-prime')"><img class='button-image' src="/static/prime.png" alt="Prime Video"></button>
+          </div>
+          <div class="button-row">
+            <button onclick="launch('pbs')"><img class='button-image' src="/static/pbs.png" alt="PBS Video"></button>
+          </div>
+          <div>
+            <h4>TCL&bull;Roku TV</h4>
+          </div>
+        </div>
+
+        <div></div>
+
+      </div>
+  </body>
+</html>

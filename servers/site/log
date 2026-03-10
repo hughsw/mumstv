@@ -11,3 +11,5 @@
   echo "*" > .venv/.gitignore
 
   pip install "fastapi[standard]"
+
+  fastapi dev --reload --host 192.168.23.10 --forwarded-allow-ips 192.168.23.1 main.py
