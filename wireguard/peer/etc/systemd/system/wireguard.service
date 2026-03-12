@@ -1,0 +1,18 @@
+[Unit]
+Description=Wireguard
+Documentation=man:wg(8) man:wg-quick(8)
+After=nss-lookup.target
+ConditionPathExists=!/etc/wireguard/wireguard_not_to_be_run
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/etc/default/wireguard
+ExecStart=/usr/bin/wg-quick up /etc/wireguard/wg_mumstv_10.conf
+ExecStop=/usr/bin/wg-quick down /etc/wireguard/wg_mumstv_10.conf
+Restart=on-failure
+RestartSec=21
+
+[Install]
+WantedBy=multi-user.target
+Alias=wireguard.service

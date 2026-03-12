@@ -1,0 +1,5 @@
+# Environment settings for wireguard (wg and wg-quick)
+
+WG_COLOR_MODE=never
+WG_HIDE_KEYS=always
+WG_ENDPOINT_RESOLUTION_RETRIES=
