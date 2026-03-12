@@ -3,11 +3,19 @@
 
   sudo ssdpy-discover ssdp:all
 
- fastapi dev --reload --host 192.168.253.11 --forwarded-allow-ips 192.168.253.1 main.py
+  fastapi dev --reload --host 192.168.253.11 --forwarded-allow-ips 192.168.253.1 main.py
+
+  curl -v -sS -4 -m 5 "http://192.168.58.101:8060/query/device-info"
+  curl -v -sS -4 -m 5 "http://192.168.58.102:8060/query/device-info"
+  curl -v -sS -4 -m 5 "http://192.168.58.107:8060/query/device-info"
+  curl -v -sS -4 -m 5 "http://192.168.58.108:8060/query/device-info"
+
+  curl -v -sS -4 -m 5 "http://192.168.58.101:8060/query/tv-channels"
+  curl -v -sS -4 -m 5 "http://192.168.58.102:8060/query/tv-channels"
+  curl -v -sS -4 -m 5 "http://192.168.58.108:8060/query/tv-channels"
 
   curl -v -sS -4 -m 5 "http://192.168.58.113:8060/query/tv-channels"
 
-  curl -v -sS -4 -m 5 "http://192.168.58.108:8060/query/tv-channels"
 
   curl -v -sS "http://192.168.58.108:8060/query/tv-channels"
 

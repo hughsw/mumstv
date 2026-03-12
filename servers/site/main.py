@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -82,7 +82,29 @@ async def get_devices():
     return dict(devices=devices)
 
 
-client = httpx.AsyncClient()
+@app.get('/camera/latest')
+async def get_camera_latest(response: FileResponse):
+    response.headers["Cache-Control"] = "no-store"
+    # typically it's a symlink that is updated regularly...
+    latest_filename = '/home/hugh/work/camera/latest.jpeg'
+    return FileResponse(latest_filename)
+
+# https://www.python-httpx.org/advanced/timeouts/
+
+client = httpx.AsyncClient(timeout=11.0)
+
+# http://192.168.23.10:8000/keypress/192.168.58.108:8060/Home
+@app.post('/keypress/{location}/{key_name}')
+async def get_location_keypress(location: str, key_name: str):
+    #device = device_by_device_id.get(device_id)
+    #location = device['location']
+    url = f'http://{location}/keypress/{key_name}'
+    print(f'main.py: get_location_keypress: url: {url}')
+    response = await client.post(url, data='')
+    return dict(
+        response = str(response),
+    )
+
 
 @app.post(site_prefix + '/devices/{device_id}/keypress/{key_name}')
 async def get_device_keypress(device_id: str, key_name: str):
@@ -100,15 +122,4 @@ async def get_device_keypress(device_id: str, key_name: str):
         key_name = key_name,
         location = location,
         r = str(r),
-    )
-
-
-# http://192.168.23.10:8000/keypress/192.168.58.108:8060/Home
-@app.post('/keypress/{location}/{key_name}')
-async def get_location_keypress(location: str, key_name: str):
-    #device = device_by_device_id.get(device_id)
-    #location = device['location']
-    response = await client.post(f'http://{location}/keypress/{key_name}', data='')
-    return dict(
-        response = str(response),
     )

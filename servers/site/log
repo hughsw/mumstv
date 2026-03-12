@@ -1,4 +1,8 @@
 
+
+  sudo ssdpy-discover ssdp:all
+
+
   python -m venv --system-site-packages .venv
 
   python --version
@@ -11,5 +15,8 @@
   echo "*" > .venv/.gitignore
 
   pip install "fastapi[standard]"
+
+
+  source .venv/bin/activate
 
   fastapi dev --reload --host 192.168.23.10 --forwarded-allow-ips 192.168.23.1 main.py
