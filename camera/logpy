@@ -1,3 +1,7 @@
+
+  https://blog.domski.pl/streaming-images-and-video-using-the-raspberry-pi-camera-module/
+  https://github.com/GlassOnTin/picamera2-webstream/blob/master/picamera2_webstream/stream_picamera.py
+
 from pprint import *
 from picamera2 import Picamera2
 pprint(Picamera2.global_camera_info())
