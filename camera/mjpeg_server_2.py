@@ -11,7 +11,7 @@ import time
 import numpy as np
 
 from picamera2 import Picamera2, MappedArray
-from picamera2.encoders import MJPEGEncoder
+from picamera2.encoders import H264Encoder, MJPEGEncoder
 from picamera2.outputs import FileOutput
 from libcamera import Transform, Rectangle, Size
 
@@ -37,17 +37,25 @@ PAGE = """\
 
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
-        self.frame = None
         self.condition = Condition()
+        self.frame = None
 
     def write(self, buf):
         with self.condition:
             self.frame = buf
             self.condition.notify_all()
 
+output = StreamingOutput()
+
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
+
+        #print(f'GET: client_address: {self.client_address}')
+        print(f'\nGET: headers:\n{str(self.headers).strip()}')
+        #print(f'GET: headers as_string:\n{self.headers.as_string(unixfrom=True)}')
+        print(f'GET: path: {repr(self.path)}')
+
         if self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
@@ -92,6 +100,10 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     daemon_threads = True
 
 
+debug = False
+#debug = True
+
+
 """
 Available cameras
 -----------------
@@ -101,11 +113,22 @@ Available cameras
                              4608x2592 [30.00 fps - (65535, 65535)/65535x65535 crop]
 """
 
+frame_duration = 70000 if not debug else 200000
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(
     main={'size': (2304, 1296)},
     lores={'size': (640, 480)},
-    controls={'FrameDurationLimits': (70000, 70000)},
+    controls={
+        'AeEnable': False,  #  'AeEnable': (False, True, True),
+        'AwbEnable': False,  #  'AwbEnable': (False, True, None),
+        'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
+        'ExposureTime': 30000,  #  'ExposureTime': (1, 66666, 20000),
+        'AnalogueGain': 1.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
+        'Brightness': 0.2,  #  'Brightness': (-1.0, 1.0, 0.0),
+        'Contrast': 1.2,  #  'Contrast': (0.0, 32.0, 1.0),
+        'Saturation': 1.5,  #  'Saturation': (0.0, 32.0, 1.0),
+    }
+#    controls={'FrameDurationLimits': (70000, 70000)},
 #    controls={'FrameDurationLimits': (100000, 100000)},
 #    controls={'FrameDurationLimits': (200000, 200000)},
     ))
@@ -137,24 +160,33 @@ width
 height
 """
 
-output = StreamingOutput()
-
-colour = (240, 240, 240)
+colour = (250, 250, 250)
+#colour = (240, 240, 240)
 #colour = (255, 255, 128)
-origin = (15, 30)
+origin = (25, 460)
+#origin = (15, 30)
 font = cv2.FONT_HERSHEY_SIMPLEX
-scale = 0.7
+scale = 0.9
 thickness = 2
 
 #print(f'cv2.putText: {cv2.putText}')
 
-# Locate points of the documents
-# or object which you want to transform
-pts1 = np.float32([[163, 41], [313, 151],
-                   [138, 233], [301, 264]])
-x, y = 20, 40
-pts2 = np.float32([[0+x, 0+y], [320+x, 0+y],
-                   [0+x, 180+y], [320+x, 180+y]])
+raw_perspective = True
+raw_perspective = False
+# Locate points of the target object
+pts1 = np.float32([[113,6], [279,139],
+                   [82,218], [266,253]])
+#pts1 = np.float32([[137,27], [299,143],
+#                   [112,229], [287,260]])
+#pts1 = np.float32([[163, 41], [313, 151],
+#                   [138, 233], [301, 264]])
+base_x = 14
+base_y = 9
+scale_xy = 44
+offset_x, offset_y = 20, 20
+# Points to which to move the target points
+pts2 = np.float32([[int(0*scale_xy+offset_x), int(0*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(0*scale_xy+offset_y)],
+                   [int(0*scale_xy+offset_x), int(base_y*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(base_y*scale_xy+offset_y)]])
 #                   [0+x, 240+y], [320+x, 240+y]])
 #pts2 = np.float32([[320, 240], [680, 240],
 #                   [320, 480], [680, 480]])
@@ -163,43 +195,101 @@ pts2 = np.float32([[0+x, 0+y], [320+x, 0+y],
 # Apply Perspective Transform Algorithm
 matrix = cv2.getPerspectiveTransform(pts1, pts2)
 
-debug = False
-#debug = True
+scale_blue = 0.4
+scale_green = 1
+scale_red = 0.9
+scale_colors = np.array((scale_blue, scale_green, scale_red), dtype=np.float32)
+np.reshape(scale_colors, (1,1,3))
 
 use_res = 'lores'
 #use_res = 'main'
+
 def apply_timestamp(request):
+  global raw_perspective
   timestamp = time.strftime('%Y-%m-%d-%H%M-%S')
   with MappedArray(request, use_res) as cvstuff:
     debug and print(f'cvstuff.array: shape: {cvstuff.array.shape}, dtype: {cvstuff.array.dtype}, strides: {cvstuff.array.strides}')
     bgr = cv2.cvtColor(cvstuff.array, cv2.COLOR_YUV420p2RGB)
     debug and print(f'bgr: shape: {bgr.shape}, dtype: {bgr.dtype}, strides: {bgr.strides}')
 
-    unwarped = cv2.warpPerspective(bgr, matrix,
-    #unwarped = cv2.warpPerspective(cvstuff.array, matrix,
-                                   tuple(reversed(bgr.shape[:2])),
-                                   #tuple(reversed(cvstuff.array.shape[:2])),
-                                   #(720, 640),
-                                   #flags=cv2.INTER_LINEAR,
-                                   flags=cv2.INTER_NEAREST,
-                                   )
-    #unwarped = cv2.warpPerspective(cvstuff.array, matrix, cvstuff.array.shape)
-    #unwarped = cv2.warpPerspective(cvstuff.array, matrix, (500, 600))
-    debug and print(f'unwarped: shape: {unwarped.shape}, dtype: {unwarped.dtype}, strides: {unwarped.strides}')
+    if raw_perspective:
+        unwarped = bgr
+    else:
+        unwarped = cv2.warpPerspective(bgr, matrix,
+        #unwarped = cv2.warpPerspective(cvstuff.array, matrix,
+                                       tuple(reversed(bgr.shape[:2])),
+                                       #tuple(reversed(cvstuff.array.shape[:2])),
+                                       #(720, 640),
+                                       flags=cv2.INTER_LINEAR,
+                                       #flags=cv2.INTER_NEAREST,
+                                       )
+        #unwarped = cv2.warpPerspective(cvstuff.array, matrix, cvstuff.array.shape)
+        #unwarped = cv2.warpPerspective(cvstuff.array, matrix, (500, 600))
+    debug and print(f'unwarped 1: shape: {unwarped.shape}, dtype: {unwarped.dtype}, strides: {unwarped.strides}')
+    #raw_perspective = not raw_perspective
 
+    # Try to compensate for very blue TV image
+    #np.multiply(unwarped, scale_colors, out=unwarped, casting='unsafe')
+    #np.multiply(unwarped[:,:,:], scale_colors, out=unwarped[:,:,:], casting='unsafe')
+    # Note: doing these individually is faster than the whole-cloth version using scale_colors; perhaps it gets done in-place without a big allocation?
+    if False:
+        if scale_blue != 1 :
+            np.multiply(unwarped[:,:,0], np.float32(scale_blue), out=unwarped[:,:,0], casting='unsafe')
+        if scale_green != 1 :
+            np.multiply(unwarped[:,:,1], np.float32(scale_green), out=unwarped[:,:,1], casting='unsafe')
+        if scale_red != 1 :
+            np.multiply(unwarped[:,:,2], np.float32(scale_red), out=unwarped[:,:,2], casting='unsafe')
+            #unwarped[:,:,0] *= 0.7
+    debug and print(f'unwarped 2: shape: {unwarped.shape}, dtype: {unwarped.dtype}, strides: {unwarped.strides}')
 
-    yuv = cv2.cvtColor(unwarped, cv2.COLOR_BGR2YUV_I420)
+    if False:
+        normed = cv2.normalize(unwarped, None, 0, 250, cv2.NORM_MINMAX)
+    else:
+        normed = unwarped
+    #normed = cv2.normalize(unwarped, None, 0, 255, cv2.NORM_MINMAX)
+    debug and print(f'normed: shape: {normed.shape}, dtype: {normed.dtype}, strides: {normed.strides}')
+
+    cv2.putText(normed, timestamp, origin, font, scale, colour, thickness)
+    #cv2.putText(unwarped, timestamp, origin, font, scale, colour, thickness)
+
+    yuv = cv2.cvtColor(normed, cv2.COLOR_BGR2YUV_I420)
+    #yuv = cv2.cvtColor(unwarped, cv2.COLOR_BGR2YUV_I420)
     #yuv = cv2.cvtColor(unwarped, cv2.COLOR_RGB2YUV_I420)
     debug and print(f'yuv: shape: {yuv.shape}, dtype: {yuv.dtype}, strides: {yuv.strides}')
 
     np.copyto(cvstuff.array, yuv)
-    #np.copyto(cvstuff.array, unwarped)
-    cv2.putText(cvstuff.array, timestamp, origin, font, scale, colour, thickness)
-    unwarped = rgb = yuv = None
+    #cv2.putText(cvstuff.array, timestamp, origin, font, scale, colour, thickness)
+
+"""
+image = cv2.imread('path_to_your_image.jpg')
+2. Convert to Float for Precision
+Convert the image to a floating-point format to allow for precise adjustments.
+
+python
+
+image_float = image.astype('float32')
+3. Adjust Color Channels
+You can adjust the blue channel to reduce the bluish tint. This can be done by multiplying the blue channel by a constant factor.
+
+python
+
+# Assuming the image is in BGR format
+image_float[:,:,0] *= 0.8  # Reduce blue channel
+4. Normalize the Image
+After adjusting the blue channel, normalize the pixel values back to the range of 0-255.
+
+python
+
+image_corrected = cv2.normalize(image_float, None, 0, 255, cv2.NORM_MINMAX)
+"""
 
 picam2.pre_callback = apply_timestamp
 #picam2.start(show_preview=True)
 
+
+
+
+H264Encoder(repeat=True, iperiod=20)
 picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
 #picam2.start_recording(MJPEGEncoder(), FileOutput(output), name='lores')
 # 2304x1296
