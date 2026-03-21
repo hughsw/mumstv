@@ -51,6 +51,9 @@ output = StreamingOutput()
 raw_perspective = True
 raw_perspective = False
 
+show_polygon = True
+#show_polygon = False
+
 xf_is_no = '/hack/stream.mjpg?xf=no'
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
@@ -180,19 +183,34 @@ thickness = 2
 #print(f'cv2.putText: {cv2.putText}')
 
 # Locate points of the target object
-pts1 = np.float32([[113,6], [279,139],
-                   [82,218], [266,253]])
+pts1 = np.float32([
+    [113,6], [279,139],
+    [266,253], [82,218],
+])
 #pts1 = np.float32([[137,27], [299,143],
 #                   [112,229], [287,260]])
 #pts1 = np.float32([[163, 41], [313, 151],
 #                   [138, 233], [301, 264]])
+polygon = np.array(pts1, np.int32)
+polygon.reshape((-1,1,2))
+
+pts1x = np.float32([
+    [112,5], [280,138],
+    [265,254], [83,219],
+])
+polygonx = np.array(pts1x, np.int32)
+polygonx.reshape((-1,1,2))
+
+
 base_x = 14
 base_y = 9
 scale_xy = 44
 offset_x, offset_y = 20, 20
 # Points to which to move the target points
-pts2 = np.float32([[int(0*scale_xy+offset_x), int(0*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(0*scale_xy+offset_y)],
-                   [int(0*scale_xy+offset_x), int(base_y*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(base_y*scale_xy+offset_y)]])
+pts2 = np.float32([
+    [int(0*scale_xy+offset_x), int(0*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(0*scale_xy+offset_y)],
+    [int(base_x*scale_xy+offset_x), int(base_y*scale_xy+offset_y)], [int(0*scale_xy+offset_x), int(base_y*scale_xy+offset_y)],
+])
 #                   [0+x, 240+y], [320+x, 240+y]])
 #pts2 = np.float32([[320, 240], [680, 240],
 #                   [320, 480], [680, 480]])
@@ -220,6 +238,9 @@ def apply_timestamp(request):
 
     if raw_perspective:
         unwarped = bgr
+        if show_polygon:
+            cv2.polylines(unwarped, [polygon], True, (5,5,5), 1)
+            cv2.polylines(unwarped, [polygonx], True, (250,250,250), 1)
     else:
         unwarped = cv2.warpPerspective(bgr, matrix,
         #unwarped = cv2.warpPerspective(cvstuff.array, matrix,
@@ -255,7 +276,8 @@ def apply_timestamp(request):
     #normed = cv2.normalize(unwarped, None, 0, 255, cv2.NORM_MINMAX)
     debug and print(f'normed: shape: {normed.shape}, dtype: {normed.dtype}, strides: {normed.strides}')
 
-    cv2.putText(normed, timestamp, origin, font, scale, colour, thickness)
+    cv2.putText(normed, timestamp, origin, font, scale, (0,0,0), thickness+3)
+    cv2.putText(normed, timestamp, origin, font, scale, colour, thickness-1)
     #cv2.putText(unwarped, timestamp, origin, font, scale, colour, thickness)
 
     yuv = cv2.cvtColor(normed, cv2.COLOR_BGR2YUV_I420)
