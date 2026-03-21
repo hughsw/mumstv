@@ -48,8 +48,14 @@ class StreamingOutput(io.BufferedIOBase):
 output = StreamingOutput()
 
 
+raw_perspective = True
+raw_perspective = False
+
+xf_is_no = '/hack/stream.mjpg?xf=no'
+
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
+        global raw_perspective
 
         #print(f'GET: client_address: {self.client_address}')
         print(f'\nGET: headers:\n{str(self.headers).strip()}')
@@ -67,7 +73,9 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
-        elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg':
+        elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg' or self.path == xf_is_no:
+            raw_perspective = self.path == xf_is_no
+
             self.send_response(200)
             self.send_header('Age', 0)
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, private')
@@ -171,8 +179,6 @@ thickness = 2
 
 #print(f'cv2.putText: {cv2.putText}')
 
-raw_perspective = True
-raw_perspective = False
 # Locate points of the target object
 pts1 = np.float32([[113,6], [279,139],
                    [82,218], [266,253]])
