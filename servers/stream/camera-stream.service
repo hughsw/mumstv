@@ -1,0 +1,17 @@
+[Unit]
+Description=Serve MJPG video from camera
+Documentation=file:/home/hugh/work/mumstv.github/camera/mjpeg_server.py
+After=network-online.target ssh.service
+
+[Service]
+Type=simple
+User=hugh
+Group=video
+ExecStart=/home/hugh/work/mumstv.github/camera/mjpeg_server.py
+Restart=always
+RestartSec=21
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

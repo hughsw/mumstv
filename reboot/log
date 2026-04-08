@@ -1,0 +1,8 @@
+
+  sudo cp reboot.service reboot-daily.timer /etc/systemd/system
+
+  sudo systemctl daemon-reload
+
+  sudo systemctl disable --now reboot-daily.timer
+  sudo systemctl enable --now reboot-daily.timer
+  sudo systemctl list-timers

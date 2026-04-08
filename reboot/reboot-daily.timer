@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for Daily Reboot
+
+[Timer]
+OnCalendar=*-*-* 03:47:00
+#RandomizedDelaySec=300
+Unit=reboot.service
+
+[Install]
+WantedBy=timers.target
