@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-# This is the same as mjpeg_server.py, but uses the h/w MJPEG encoder.
-
 import io
 import logging
 import socketserver
@@ -9,6 +7,7 @@ from http import server
 from threading import Condition
 import time
 import numpy as np
+import subprocess
 
 from picamera2 import Picamera2, MappedArray
 from picamera2.encoders import H264Encoder, MJPEGEncoder
@@ -65,7 +64,16 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         #print(f'GET: headers as_string:\n{self.headers.as_string(unixfrom=True)}')
         print(f'GET: path: {repr(self.path)}')
 
-        if self.path == '/':
+        if self.path == '/hack/reBoot':
+            subprocess.check_call(['sudo', '/usr/sbin/reboot'])
+            content = 'OK'.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+
+        elif self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
@@ -171,41 +179,58 @@ width
 height
 """
 
-colour = (250, 250, 250)
-#colour = (240, 240, 240)
-#colour = (255, 255, 128)
-origin = (25, 460)
-#origin = (15, 30)
+pixel_dark = 4
+pixel_bright = 251
+colour_dark = (pixel_dark, pixel_dark, pixel_dark)
+colour_bright = (pixel_bright, pixel_bright, pixel_bright)
+#colour_bright = (240, 240, 240)
+#colour_bright = (255, 255, 128)
+
+timestamp_origin = (8, 472)
+#timestamp_origin = (25, 460)
+#timestamp_origin = (15, 30)
 font = cv2.FONT_HERSHEY_SIMPLEX
 scale = 0.9
-thickness = 2
+thickness = 1
 
 #print(f'cv2.putText: {cv2.putText}')
 
 # Locate points of the target object
 pts1 = np.float32([
-    [113,6], [279,139],
-    [266,253], [82,218],
+    [45,189], [241,260], [248,368], [29,405],
+    #[87,188], [262,267], [265,381], [53,397],
+    #[146,127], [295,233], [281,351], [99,318],
+    #[113,20], [279,139], [266,253], [82,218],
 ])
 #pts1 = np.float32([[137,27], [299,143],
 #                   [112,229], [287,260]])
 #pts1 = np.float32([[163, 41], [313, 151],
 #                   [138, 233], [301, 264]])
-polygon = np.array(pts1, np.int32)
-polygon.reshape((-1,1,2))
+polygon_inner = np.array(pts1, np.int32)
+polygon_inner.reshape((-1,1,2))
 
-pts1x = np.float32([
-    [112,5], [280,138],
-    [265,254], [83,219],
-])
-polygonx = np.array(pts1x, np.int32)
-polygonx.reshape((-1,1,2))
+def make_poly(pts, offset=1):
+    # assumes points are clockwise from upper left...
+    (p1x, p1y), (p2x, p2y), (p3x, p3y), (p4x, p4y) = pts
+    # positive offset is outside existing
+    return np.float32([
+        [p1x-offset, p1y-offset], [p2x+offset, p2y-offset], [p3x+offset, p3y+offset], [p4x-offset, p4y+offset],
+        ])
+
+pts1x = make_poly(pts1, 3)
+#pts1x = np.float32([
+#    [112,5], [280,138],
+#    [265,254], [83,219],
+#])
+polygon_outer = np.array(pts1x, np.int32)
+polygon_outer.reshape((-1,1,2))
 
 
 base_x = 14
 base_y = 9
-scale_xy = 44
-offset_x, offset_y = 20, 20
+scale_xy = 48
+offset_x, offset_y = 2,2
+#offset_x, offset_y = 20, 20
 # Points to which to move the target points
 pts2 = np.float32([
     [int(0*scale_xy+offset_x), int(0*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(0*scale_xy+offset_y)],
@@ -239,8 +264,8 @@ def apply_timestamp(request):
     if raw_perspective:
         unwarped = bgr
         if show_polygon:
-            cv2.polylines(unwarped, [polygon], True, (5,5,5), 1)
-            cv2.polylines(unwarped, [polygonx], True, (250,250,250), 1)
+            cv2.polylines(unwarped, [polygon_inner], True, colour_bright, 1)
+            cv2.polylines(unwarped, [polygon_outer], True, colour_dark, 1)
     else:
         unwarped = cv2.warpPerspective(bgr, matrix,
         #unwarped = cv2.warpPerspective(cvstuff.array, matrix,
@@ -276,9 +301,9 @@ def apply_timestamp(request):
     #normed = cv2.normalize(unwarped, None, 0, 255, cv2.NORM_MINMAX)
     debug and print(f'normed: shape: {normed.shape}, dtype: {normed.dtype}, strides: {normed.strides}')
 
-    cv2.putText(normed, timestamp, origin, font, scale, (0,0,0), thickness+3)
-    cv2.putText(normed, timestamp, origin, font, scale, colour, thickness-1)
-    #cv2.putText(unwarped, timestamp, origin, font, scale, colour, thickness)
+    cv2.putText(normed, timestamp, timestamp_origin, font, scale, colour_dark, thickness+4)
+    cv2.putText(normed, timestamp, timestamp_origin, font, scale, colour_bright, thickness)
+    #cv2.putText(unwarped, timestamp, origin, font, scale, colour_bright, thickness)
 
     yuv = cv2.cvtColor(normed, cv2.COLOR_BGR2YUV_I420)
     #yuv = cv2.cvtColor(unwarped, cv2.COLOR_BGR2YUV_I420)
@@ -286,7 +311,7 @@ def apply_timestamp(request):
     debug and print(f'yuv: shape: {yuv.shape}, dtype: {yuv.dtype}, strides: {yuv.strides}')
 
     np.copyto(cvstuff.array, yuv)
-    #cv2.putText(cvstuff.array, timestamp, origin, font, scale, colour, thickness)
+    #cv2.putText(cvstuff.array, timestamp, origin, font, scale, colour_bright, thickness)
 
 """
 image = cv2.imread('path_to_your_image.jpg')
@@ -313,9 +338,6 @@ image_corrected = cv2.normalize(image_float, None, 0, 255, cv2.NORM_MINMAX)
 
 picam2.pre_callback = apply_timestamp
 #picam2.start(show_preview=True)
-
-
-
 
 H264Encoder(repeat=True, iperiod=20)
 picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
