@@ -48,10 +48,7 @@ mkdir -p "$logdir"
     ####################
     #
     # wireguard
-    #
-    export DEBIAN_FRONTEND=noninteractive
-    #apt-get update
-    #apt-get install -y wireguard wireguard-tools
+    # - assumes installed packages: wireguard wireguard-tools
 
     tee /etc/default/wireguard <<"EOF"
 # Environment settings for wireguard (wg and wg-quick)
@@ -87,35 +84,41 @@ WantedBy=multi-user.target
 
 EOF
 
-    # Per peer wireguard: wg_mumstv_11.conf
-    wireguard_conf=wg_mumstv_11
-    tee /etc/wireguard/${wireguard_conf}.conf <<EOF
-# ThisConfFile: ${wireguard_conf}.conf
-EOF
-    # Per peer details from mumstv.com
-    tee -a /etc/wireguard/${wireguard_conf}.conf <<"EOF"
-# Tag: mumstv
-# PeerId: 11
-[Interface]
-PrivateKey = IAShOJrqlqZtEma3l5Tu/9PiNqgL+4GbtpcFTSz7FWA=
-# PublicKey = voUPV4i/kzzPHvAWrGXToYcZLJjin13z29oa5LckB24=
-Address = fd00::23:11/120, 192.168.23.11/24
+    # Per peer wireguard configuration
+    this_conf=wg_mumstv_11
+    Tag=mumstv
+    PeerId=11
+    ThisPrivateKey='IAShOJrqlqZtEma3l5Tu/9PiNqgL+4GbtpcFTSz7FWA='
+    ThisPublicKey='voUPV4i/kzzPHvAWrGXToYcZLJjin13z29oa5LckB24='
+    ThisAddress='fd00::23:11/120, 192.168.23.11/24'
+    PeerConfFile='wg_mumstv.conf'
+    PeerPublicKey='0JekPK59Jnsj7jed9m/0WFPBSG+CWzejyp12s+A1Oio='
+    PeerAllowedIPs='fd00::23:1/128, 192.168.23.1/32'
+    PeerEndpoint='mumstv.com:18000'
 
+    tee /etc/wireguard/${this_conf}.conf <<EOF
+# ThisConfFile: ${this_conf}.conf
+# Tag: $Tag
+# PeerId: $PeerId
+[Interface]
+PrivateKey = $ThisPrivateKey
+# PublicKey = $ThisPublicKey
+Address = $ThisAddress
 
 [Peer]
-# ServerConfFile: wg_mumstv.conf
-PublicKey = 0JekPK59Jnsj7jed9m/0WFPBSG+CWzejyp12s+A1Oio=
-AllowedIPs = fd00::23:1/128, 192.168.23.1/32
-Endpoint = mumstv.com:18000
+# PeerConfFile: $PeerConfFile
+PublicKey = $PeerPublicKey
+AllowedIPs = $PeerAllowedIPs
+Endpoint = $PeerEndpoint
 PersistentKeepalive = 25
 
 EOF
-    chmod go-rwx /etc/wireguard/${wireguard_conf}.conf
+    chmod go-rwx /etc/wireguard/${this_conf}.conf
 
     systemctl daemon-reload
-    systemctl disable wireguard@${wireguard_conf}.service || true
-    systemctl enable wireguard@${wireguard_conf}.service
-    systemctl start wireguard@${wireguard_conf}.service
+    systemctl disable wireguard@${this_conf}.service || true
+    systemctl enable wireguard@${this_conf}.service
+    systemctl start wireguard@${this_conf}.service
     ping -c 3 -4 192.168.23.1
     ping -c 3 -6 fd00::23:1
     wg
@@ -132,6 +135,10 @@ EOF
     # camera
     #
 
+    camera_overlay=imx219,rotation=180
+    sed -i  -e 's/^camera_auto_detect=1/# camera_auto_detect=1  # mumstv/' /boot/firmware/config.txt
+    grep -e '^camera_auto_detect=0' /boot/firmware/config.txt || printf '\n# mumstv\n[all]\ncamera_auto_detect=0\ndtoverlay=%s\n\n' "$camera_overlay" | tee -a /boot/firmware/config.txt
+
     #
     # camera
     #
@@ -161,6 +168,7 @@ EOF
 
 
 
+    set +x
     echo
     echo OK
 

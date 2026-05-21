@@ -1,4 +1,13 @@
 
+  dir=~/work/camera
+  tag=${dir}/test4_$(date '+%Y-%m-%d-%H%M-%S')
+  size=" --width 3280 --height 2464 "
+  #size=" --width 1536 --height 864 "
+  sudo rpicam-still --nopreview  --immediate  --quality 75  ${size}  --thumb 320:240:70 --metadata ${tag}.txt  --output ${tag}.jpeg  --latest ${dir}/latest.jpeg
+  exiftool -b -ThumbnailImage  ${tag}.jpeg > ${tag}_thumb.jpeg
+  ln -f -s ${tag}_thumb.jpeg ${dir}/latest_thumbnail.jpeg
+  #  exiftool -b -ThumbnailImage  ${dir}/latest.jpeg > ${dir}/latest_thumbnail.jpeg
+
 
   dir=~/work/camera
   tag=${dir}/test4_$(date '+%Y-%m-%d-%H%M-%S')
@@ -34,8 +43,6 @@ sudo rpicam-still  --timeout 50   --shutter 100000  --rotation 180  --width 1920
 
   exiftool -b -ThumbnailImage my_image.jpg > my_thumbnail.jpg
 
-  sudo rpicam-still  --list-cameras
-
 From: overlays/README
 Name:   imx708
 Info:   Sony IMX708 camera module.
@@ -56,6 +63,8 @@ Params: rotation                Mounting rotation of the camera sensor (0 or
                                 450000000 (default), 447000000, 453000000.
 
 
+  sudo rpicam-still  --list-cameras
+
 Available cameras
 -----------------
 0 : imx708 [4608x2592 10-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx708@1a)
@@ -70,6 +79,19 @@ Available cameras
                              1296x972 [46.34 fps - (0, 0)/2592x1944 crop]
                              1920x1080 [32.81 fps - (348, 434)/1928x1080 crop]
                              2592x1944 [15.63 fps - (0, 0)/2592x1944 crop]
+
+Available cameras
+-----------------
+0 : imx219 [3280x2464 10-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx219@10)
+    Modes: 'SRGGB10_CSI2P' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                             1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                             1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                             3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+           'SRGGB8' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                      1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                      1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                      3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+
 
 
   sudo rpicam-still  --help
