@@ -7,14 +7,26 @@
 
   sudo rpicam-still  --timeout 2000   --shutter 100000  --rotation 180  --width 1920 --height 1080  --flicker-period 8333us --metadata ${tag}.txt  --output ${tag}.jpeg
 
-tag=test4_$(date '+%Y-%m-%d-%H%M-%S')
-sudo rpicam-still  --timeout 50   --shutter 100000  --rotation 180  --width 1920 --height 1080  --flicker-period 8333us --metadata ${tag}.txt  --output ${tag}.jpeg
+  tag=test4_$(date '+%Y-%m-%d-%H%M-%S')
+  sudo rpicam-still  --timeout 50   --shutter 100000  --rotation 180  --width 1920 --height 1080  --flicker-period 8333us --metadata ${tag}.txt  --output ${tag}.jpeg
 
   --width 1296 --height 972
   --width 1920 --height 1080
 
 
   sudo rpicam-still  --list-cameras
+
+Available cameras
+-----------------
+0 : imx219 [3280x2464 10-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx219@10)
+    Modes: 'SRGGB10_CSI2P' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                             1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                             1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                             3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+           'SRGGB8' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                      1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                      1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                      3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
 
 Available cameras
 -----------------

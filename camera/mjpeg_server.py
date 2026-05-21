@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+# needs: apt-get install -y python3 python3-numpy python3-picamera2 python3-opencv
+
 import io
 import logging
 import socketserver
@@ -51,7 +53,7 @@ raw_perspective = True
 raw_perspective = False
 
 show_polygon = True
-#show_polygon = False
+show_polygon = False
 
 xf_is_no = '/hack/stream.mjpg?xf=no'
 
@@ -126,6 +128,18 @@ debug = False
 """
 Available cameras
 -----------------
+0 : imx219 [3280x2464 10-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx219@10)
+    Modes: 'SRGGB10_CSI2P' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                             1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                             1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                             3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+           'SRGGB8' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                      1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                      1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                      3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+
+Available cameras
+-----------------
 0 : imx708 [4608x2592 10-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx708@1a)
     Modes: 'SRGGB10_CSI2P' : 1536x864 [30.00 fps - (65535, 65535)/65535x65535 crop]
                              2304x1296 [30.00 fps - (65535, 65535)/65535x65535 crop]
@@ -135,8 +149,20 @@ Available cameras
 frame_duration = 70000 if not debug else 200000
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(
-    main={'size': (2304, 1296)},
-    lores={'size': (640, 480)},
+    #main={'size': (3280, 2464)},
+    main={'size': (1920, 1080)},
+    #main={'size': (2304, 1296)},
+    lores={'size': (1280, 960)},
+    #lores={'size': (640, 480)},
+    #lores={'size': (320, 240)},
+    controls={},
+#    controls={'FrameDurationLimits': (70000, 70000)},
+#    controls={'FrameDurationLimits': (100000, 100000)},
+#    controls={'FrameDurationLimits': (200000, 200000)},
+    ))
+
+if False:
+    pass
     controls={
         'AeEnable': False,  #  'AeEnable': (False, True, True),
         'AwbEnable': False,  #  'AwbEnable': (False, True, None),
@@ -147,10 +173,7 @@ picam2.configure(picam2.create_video_configuration(
         'Contrast': 1.2,  #  'Contrast': (0.0, 32.0, 1.0),
         'Saturation': 1.5,  #  'Saturation': (0.0, 32.0, 1.0),
     }
-#    controls={'FrameDurationLimits': (70000, 70000)},
-#    controls={'FrameDurationLimits': (100000, 100000)},
-#    controls={'FrameDurationLimits': (200000, 200000)},
-    ))
+
 #picam2.configure(picam2.create_video_configuration(main={'size': (1536, 864)}, lores={'size': (640, 480)}, controls={'FrameDurationLimits': (70000, 70000)}))
 # (33333, 250000000)
 #picam2.configure(picam2.create_video_configuration(lores={'size': (320, 240)}, transform=Transform(hflip=True, vflip=True), controls={'FrameDurationLimits': (200000, 200000)}))

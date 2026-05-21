@@ -3,7 +3,8 @@
   tag=${dir}/test4_$(date '+%Y-%m-%d-%H%M-%S')
   size=" --width 3280 --height 2464 "
   #size=" --width 1536 --height 864 "
-  sudo rpicam-still --nopreview  --immediate  --quality 75  ${size}  --thumb 320:240:70 --metadata ${tag}.txt  --output ${tag}.jpeg  --latest ${dir}/latest.jpeg
+  #  --raw
+  sudo rpicam-still  --nopreview  --immediate  --quality 85 --rotation 180  ${size}  --thumb 320:240:70 --metadata ${tag}.txt  --output ${tag}.jpeg  --latest ${dir}/latest.jpeg
   exiftool -b -ThumbnailImage  ${tag}.jpeg > ${tag}_thumb.jpeg
   ln -f -s ${tag}_thumb.jpeg ${dir}/latest_thumbnail.jpeg
   #  exiftool -b -ThumbnailImage  ${dir}/latest.jpeg > ${dir}/latest_thumbnail.jpeg
