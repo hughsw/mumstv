@@ -4,7 +4,6 @@
 
 import io
 import logging
-import socketserver
 from http import server
 from threading import Condition
 import time
@@ -43,8 +42,11 @@ class StreamingOutput(io.BufferedIOBase):
 
     def write(self, buf):
         with self.condition:
-            self.frame = buf
+            # copy since we can't control when self.frame will be used;
+            # yes, there's still a race if write is called again before the notify_all clients have used it
+            self.frame = bytes(buf)
             self.condition.notify_all()
+        return len(self.frame)
 
 output = StreamingOutput()
 
@@ -68,7 +70,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
         if self.path == '/hack/reBoot':
             subprocess.check_call(['sudo', '/usr/sbin/reboot'])
-            content = 'OK'.encode('utf-8')
+            content = 'reboot: OK'.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', len(content))
@@ -88,20 +90,21 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.wfile.write(content)
         elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg' or self.path == xf_is_no:
             raw_perspective = self.path == xf_is_no
+            boundary = 'FRAME_NNZADxNpMGgEGziw'
 
             self.send_response(200)
             self.send_header('Age', 0)
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, private')
             self.send_header('Pragma', 'no-cache')
             self.send_header('Expires', '0')
-            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME_NNZADxNpMGgEGziw')
+            self.send_header('Content-Type', f'multipart/x-mixed-replace; boundary={boundary}')
             self.end_headers()
             try:
                 while True:
                     with output.condition:
                         output.condition.wait()
                         frame = output.frame
-                    self.wfile.write(b'--FRAME_NNZADxNpMGgEGziw\r\n')
+                    self.wfile.write(f'--{boundary}\r\n'.encode('utf-8'))
                     self.send_header('Content-Type', 'image/jpeg')
                     self.send_header('Content-Length', len(frame))
                     self.end_headers()
@@ -115,8 +118,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
-
-class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
+class StreamingServer(server.ThreadingHTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
@@ -137,6 +139,63 @@ Available cameras
                       1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
                       1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
                       3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+[{'bit_depth': 10,
+  'crop_limits': (1000, 752, 1280, 960),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 103.33,
+  'size': (640, 480),
+  'unpacked': 'SRGGB10'},
+ {'bit_depth': 10,
+  'crop_limits': (0, 0, 3280, 2464),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 41.85,
+  'size': (1640, 1232),
+  'unpacked': 'SRGGB10'},
+ {'bit_depth': 10,
+  'crop_limits': (680, 692, 1920, 1080),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 47.57,
+  'size': (1920, 1080),
+  'unpacked': 'SRGGB10'},
+ {'bit_depth': 10,
+  'crop_limits': (0, 0, 3280, 2464),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 21.19,
+  'size': (3280, 2464),
+  'unpacked': 'SRGGB10'},
+ {'bit_depth': 8,
+  'crop_limits': (1000, 752, 1280, 960),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB8,
+  'fps': 103.33,
+  'size': (640, 480),
+  'unpacked': 'SRGGB8'},
+ {'bit_depth': 8,
+  'crop_limits': (0, 0, 3280, 2464),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB8,
+  'fps': 41.85,
+  'size': (1640, 1232),
+  'unpacked': 'SRGGB8'},
+ {'bit_depth': 8,
+  'crop_limits': (680, 692, 1920, 1080),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB8,
+  'fps': 47.57,
+  'size': (1920, 1080),
+  'unpacked': 'SRGGB8'},
+ {'bit_depth': 8,
+  'crop_limits': (0, 0, 3280, 2464),
+  'exposure_limits': (75, 11766829, 20000),
+  'format': SRGGB8,
+  'fps': 21.19,
+  'size': (3280, 2464),
+  'unpacked': 'SRGGB8'}]
+
 
 Available cameras
 -----------------
@@ -148,6 +207,11 @@ Available cameras
 
 frame_duration = 70000 if not debug else 200000
 picam2 = Picamera2()
+
+if False:
+  from pprint import *
+  pprint(picam2.sensor_modes)
+
 picam2.configure(picam2.create_video_configuration(
     #main={'size': (3280, 2464)},
     main={'size': (1920, 1080)},
@@ -155,7 +219,9 @@ picam2.configure(picam2.create_video_configuration(
     lores={'size': (1280, 960)},
     #lores={'size': (640, 480)},
     #lores={'size': (320, 240)},
-    controls={},
+    controls={
+        'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
+    },
 #    controls={'FrameDurationLimits': (70000, 70000)},
 #    controls={'FrameDurationLimits': (100000, 100000)},
 #    controls={'FrameDurationLimits': (200000, 200000)},
