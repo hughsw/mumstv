@@ -17,29 +17,32 @@ tee $exe <<"EOF"
 
 set -euo pipefail
 
-sec() {
+get_now_sec() {
     date '+%s'
 }
 
 timestamp() {
-    sec=${1:-$(date '+%s')}
+    sec=${1:-$(get_now_sec)}
     date --date=@$sec '+%Y-%m-%d-%H%M-%S'
 }
 
 
-start_sec=$(sec)
+start_sec=$(get_now_sec)
 start_timestamp=$(timestamp $start_sec)
+
+now_filename=""
 old_filename=""
 persist() {
-    now_sec=$(sec)
+    now_sec=$(get_now_sec)
     now_timestamp=$(timestamp $now_sec)
     dur_sec=$((now_sec - start_sec))
     dur_sec0s=$(printf '%06d' $dur_sec)
+
+    test -n "$old_filename" && rm $old_filename
+    old_filename="$now_filename"
     now_filename=${start_timestamp}__${now_timestamp}__${dur_sec0s}
     echo $dur_sec > $now_filename
-    test -n "$old_filename" && rm $old_filename
     sync
-    old_filename="$now_filename"
 }
 
 if false ; then
