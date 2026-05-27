@@ -22,11 +22,12 @@ import cv2
 PAGE = """\
 <html>
   <head>
-    <title>Picamera2 MJPEG streaming demo</title>
+    <title>MumsTV demo</title>
   </head>
   <body>
-    <h1>Picamera2 MJPEG Streaming Demo</h1>
-    <img src='http://192.168.58.114:8001/stream.mjpg' />
+    <h1>MumsTV Streaming Demo</h1>
+    <img src='/hack/stream.mjpg?xf=no' />
+    <!--<img src='http://192.168.58.114:8001/stream.mjpg' />-->
     <!--<img src="stream.mjpg" />-->
     <!--<img src="stream.mjpg" width="320" height="240" />-->
     <!--<img src="stream.mjpg" width="640" height="480" />-->
@@ -35,7 +36,7 @@ PAGE = """\
 """
 
 
-class StreamingOutput(io.BufferedIOBase):
+class FramePubSubIO(io.BufferedIOBase):
     def __init__(self):
         self.condition = Condition()
         self.frame = None
@@ -43,12 +44,24 @@ class StreamingOutput(io.BufferedIOBase):
     def write(self, buf):
         with self.condition:
             # copy since we can't control when self.frame will be used;
-            # yes, there's still a race if write is called again before the notify_all clients have used it
+            # yes, there's still a race if write is called again before the notify_all clients have used the current frame...
             self.frame = bytes(buf)
             self.condition.notify_all()
         return len(self.frame)
 
-output = StreamingOutput()
+    def __iter__(self):
+        while True:
+            with self.condition:
+                self.condition.wait()
+                yield self.frame
+
+
+class ThreadedReuseServer(server.ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+output = FramePubSubIO()
 
 
 raw_perspective = True
@@ -61,12 +74,11 @@ xf_is_no = '/hack/stream.mjpg?xf=no'
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
-        global raw_perspective
+        global raw_perspective, show_polygon
 
-        #print(f'GET: client_address: {self.client_address}')
-        print(f'\nGET: headers:\n{str(self.headers).strip()}')
-        #print(f'GET: headers as_string:\n{self.headers.as_string(unixfrom=True)}')
+        print(f'\nGET: client_address: {self.client_address}')
         print(f'GET: path: {repr(self.path)}')
+        #print(f'GET: headers as_string:\n{self.headers.as_string(unixfrom=True)}')
 
         if self.path == '/hack/reBoot':
             subprocess.check_call(['sudo', '/usr/sbin/reboot'])
@@ -88,7 +100,10 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
+
         elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg' or self.path == xf_is_no:
+            print(f'GET: headers:\n{str(self.headers).strip()}')
+
             raw_perspective = self.path == xf_is_no
             boundary = 'FRAME_NNZADxNpMGgEGziw'
 
@@ -100,10 +115,11 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', f'multipart/x-mixed-replace; boundary={boundary}')
             self.end_headers()
             try:
-                while True:
-                    with output.condition:
-                        output.condition.wait()
-                        frame = output.frame
+#                while True:
+#                    with output.condition:
+#                        output.condition.wait()
+#                        frame = output.frame
+                for frame in output:
                     self.wfile.write(f'--{boundary}\r\n'.encode('utf-8'))
                     self.send_header('Content-Type', 'image/jpeg')
                     self.send_header('Content-Length', len(frame))
@@ -117,10 +133,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         else:
             self.send_error(404)
             self.end_headers()
-
-class StreamingServer(server.ThreadingHTTPServer):
-    allow_reuse_address = True
-    daemon_threads = True
 
 
 debug = False
@@ -208,15 +220,23 @@ Available cameras
 frame_duration = 70000 if not debug else 200000
 picam2 = Picamera2()
 
-if False:
-  from pprint import *
-  pprint(picam2.sensor_modes)
+
+from pprint import pprint
+print()
+print('sensor_modes:')
+sensor_modes =picam2.sensor_modes
+print(f'len(sensor_modes): {len(sensor_modes)}')
+pprint(sensor_modes)
+print()
+print('camera_controls:')
+pprint(picam2.camera_controls)
 
 picam2.configure(picam2.create_video_configuration(
     #main={'size': (3280, 2464)},
     main={'size': (1920, 1080)},
     #main={'size': (2304, 1296)},
-    lores={'size': (1280, 960)},
+    lores={'size': (1920, 1080)},
+    #lores={'size': (1280, 960)},
     #lores={'size': (640, 480)},
     #lores={'size': (320, 240)},
     controls={
@@ -226,6 +246,23 @@ picam2.configure(picam2.create_video_configuration(
 #    controls={'FrameDurationLimits': (100000, 100000)},
 #    controls={'FrameDurationLimits': (200000, 200000)},
     ))
+
+print()
+print(f'configuration_sensor: {picam2.camera_configuration()["sensor"]}')
+print(f'configuration_raw: {picam2.camera_configuration()["raw"]}')
+print(f'configuration_main: {picam2.camera_configuration()["main"]}')
+print(f'configuration_lores: {picam2.camera_configuration()["lores"]}')
+
+print()
+print('dir(picam2):')
+pprint(dir(picam2))
+for attr in dir(picam2):
+    print()
+    print(attr)
+    try:
+        pprint(getattr(picam2,attr))
+    except TypeError:
+        pprint(type(getattr(picam2,attr)))
 
 if False:
     pass
@@ -436,7 +473,7 @@ picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
 
 try:
     address = ('', 8001)
-    server = StreamingServer(address, StreamingHandler)
+    server = ThreadedReuseServer(address, StreamingHandler)
     print(f'serving at (address, port): {address}')
     server.serve_forever()
 finally:
