@@ -82,9 +82,8 @@ WantedBy=default.target
 EOF
 
 
-systemctl disable --now uptimes.service || true
-
 systemctl daemon-reload
+systemctl disable --now uptimes.service || true
 systemctl enable uptimes.service
 systemctl start uptimes.service
 
