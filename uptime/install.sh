@@ -38,11 +38,11 @@ persist() {
     dur_sec=$((now_sec - start_sec))
     dur_sec0s=$(printf '%06d' $dur_sec)
 
-    test -n "$old_filename" && rm $old_filename
-    old_filename="$now_filename"
     now_filename=${start_timestamp}__${now_timestamp}__${dur_sec0s}
     echo $dur_sec > $now_filename
     sync
+    test -n "$old_filename" && rm $old_filename
+    old_filename="$now_filename"
 }
 
 if false ; then
