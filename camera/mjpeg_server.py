@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# needs: apt-get install -y python3 python3-numpy python3-picamera2 python3-opencv
+# needs: sudo /bin/dash -c 'DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-numpy python3-picamera2 python3-opencv'
 
 import io
 import logging
@@ -215,9 +215,73 @@ Available cameras
     Modes: 'SRGGB10_CSI2P' : 1536x864 [30.00 fps - (65535, 65535)/65535x65535 crop]
                              2304x1296 [30.00 fps - (65535, 65535)/65535x65535 crop]
                              4608x2592 [30.00 fps - (65535, 65535)/65535x65535 crop]
+
+len(sensor_modes): 3
+[{'bit_depth': 10,
+  'crop_limits': (768, 432, 3072, 1728),
+  'exposure_limits': (9, 77208145, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 120.13,
+  'size': (1536, 864),
+  'unpacked': 'SRGGB10'},
+ {'bit_depth': 10,
+  'crop_limits': (0, 0, 4608, 2592),
+  'exposure_limits': (13, 112015096, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 56.03,
+  'size': (2304, 1296),
+  'unpacked': 'SRGGB10'},
+ {'bit_depth': 10,
+  'crop_limits': (0, 0, 4608, 2592),
+  'exposure_limits': (26, 220416802, 20000),
+  'format': SRGGB10_CSI2P,
+  'fps': 14.35,
+  'size': (4608, 2592),
+  'unpacked': 'SRGGB10'}]
+
+camera_controls:
+{'AeConstraintMode': (0, 3, 0),
+ 'AeEnable': (False, True, True),
+ 'AeExposureMode': (0, 3, 0),
+ 'AeFlickerMode': (0, 1, 0),
+ 'AeFlickerPeriod': (100, 1000000, None),
+ 'AeMeteringMode': (0, 3, 0),
+ 'AfMetering': (0, 1, 0),
+ 'AfMode': (0, 2, 0),
+ 'AfPause': (0, 2, 0),
+ 'AfRange': (0, 2, 0),
+ 'AfSpeed': (0, 1, 0),
+ 'AfTrigger': (0, 1, 0),
+ 'AfWindows': ((0, 0, 0, 0), (65535, 65535, 65535, 65535), [(0, 0, 0, 0)]),
+ 'AnalogueGain': (1.1228070259094238, 16.0, 1.0),
+ 'AnalogueGainMode': (0, 1, 0),
+ 'AwbEnable': (False, True, None),
+ 'AwbMode': (0, 7, 0),
+ 'Brightness': (-1.0, 1.0, 0.0),
+ 'CnnEnableInputTensor': (False, True, False),
+ 'ColourCorrectionMatrix': (0.0, 8.0, None),
+ 'ColourGains': (0.0, 32.0, None),
+ 'ColourTemperature': (100, 100000, None),
+ 'Contrast': (0.0, 32.0, 1.0),
+ 'ExposureTime': (26, 220416802, 20000),
+ 'ExposureTimeMode': (0, 1, 0),
+ 'ExposureValue': (-8.0, 8.0, 0.0),
+ 'FrameDurationLimits': (69669, 220535845, (33333, 33333)),
+ 'HdrMode': (0, 4, 0),
+ 'LensPosition': (0.0, 15.0, 1.0),
+ 'NoiseReductionMode': (0, 4, 0),
+ 'Saturation': (0.0, 32.0, 1.0),
+ 'ScalerCrop': ((0, 0, 64, 64), (0, 0, 4608, 2592), (576, 0, 3456, 2592)),
+ 'Sharpness': (0.0, 16.0, 1.0),
+ 'StatsOutputEnable': (False, True, False),
+ 'SyncFrames': (100, 100000, 1000),
+ 'SyncMode': (0, 2, 0)}
+
+
 """
 
-frame_duration = 70000 if not debug else 200000
+frame_duration = 100000 if not debug else 200000
+#frame_duration = 70000 if not debug else 200000
 picam2 = Picamera2()
 
 
@@ -231,20 +295,42 @@ print()
 print('camera_controls:')
 pprint(picam2.camera_controls)
 
+controls_default = {
+    'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
+    'AfMode': 2 ,
+    'AfTrigger': 0,
+    #'LensPosition': 3.0,  #      'LensPosition': (0.0, 15.0, 1.0),
+
+}
+
+controls_dark = {
+    'AeEnable': False,  #  'AeEnable': (False, True, True),
+    'AwbEnable': False,  #  'AwbEnable': (False, True, None),
+    'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
+    'ExposureTime': 60000,  #  'ExposureTime': (1, 66666, 20000),
+    'AnalogueGain': 16.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
+    'Brightness': 0.0,  #  'Brightness': (-1.0, 1.0, 0.0),
+    'Contrast': 1.0,  #  'Contrast': (0.0, 32.0, 1.0),
+    'Saturation': 1.0,  #  'Saturation': (0.0, 32.0, 1.0),
+}
+
 picam2.configure(picam2.create_video_configuration(
+    #main={'size': (4608, 2592)},
     #main={'size': (3280, 2464)},
-    main={'size': (1920, 1080)},
-    #main={'size': (2304, 1296)},
-    lores={'size': (1920, 1080)},
+    main={'size': (2304, 1296)},
+    #main={'size': (1920, 1080)},
+    #main={'size': (1536, 864)},
+
+    lores={'size': (2304, 1296)},
+    #lores={'size': (1920, 1080)},
+    #lores={'size': (1536, 864)},
     #lores={'size': (1280, 960)},
+    #lores={'size': (1152, 648)},
     #lores={'size': (640, 480)},
     #lores={'size': (320, 240)},
-    controls={
-        'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
-    },
-#    controls={'FrameDurationLimits': (70000, 70000)},
-#    controls={'FrameDurationLimits': (100000, 100000)},
-#    controls={'FrameDurationLimits': (200000, 200000)},
+
+    #controls=controls_dark,
+    controls=controls_default,
     ))
 
 print()
@@ -252,17 +338,21 @@ print(f'configuration_sensor: {picam2.camera_configuration()["sensor"]}')
 print(f'configuration_raw: {picam2.camera_configuration()["raw"]}')
 print(f'configuration_main: {picam2.camera_configuration()["main"]}')
 print(f'configuration_lores: {picam2.camera_configuration()["lores"]}')
-
 print()
-print('dir(picam2):')
-pprint(dir(picam2))
-for attr in dir(picam2):
+print('camera_config:')
+pprint(picam2.camera_config)
+
+if False:
     print()
-    print(attr)
-    try:
-        pprint(getattr(picam2,attr))
-    except TypeError:
-        pprint(type(getattr(picam2,attr)))
+    print('dir(picam2):')
+    pprint(dir(picam2))
+    for attr in dir(picam2):
+        print()
+        print(attr)
+        try:
+            pprint(getattr(picam2,attr))
+        except TypeError:
+            pprint(type(getattr(picam2,attr)))
 
 if False:
     pass
@@ -270,7 +360,7 @@ if False:
         'AeEnable': False,  #  'AeEnable': (False, True, True),
         'AwbEnable': False,  #  'AwbEnable': (False, True, None),
         'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
-        'ExposureTime': 30000,  #  'ExposureTime': (1, 66666, 20000),
+        'ExposureTime': 60000,  #  'ExposureTime': (1, 66666, 20000),
         'AnalogueGain': 1.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
         'Brightness': 0.2,  #  'Brightness': (-1.0, 1.0, 0.0),
         'Contrast': 1.2,  #  'Contrast': (0.0, 32.0, 1.0),
