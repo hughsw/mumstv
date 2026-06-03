@@ -122,6 +122,7 @@ def clean_list(seq):
 
 
 
+# curl -sSL http://localhost:8000/cameras/0 | jq .
 @app.get('/cameras/{index}')
 async def cameras_index_get(index: int):
     global cameras
