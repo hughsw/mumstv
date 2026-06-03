@@ -7,6 +7,7 @@ import logging
 from http import server
 from threading import Condition
 import time
+from pprint import pprint
 
 use_np = False
 if use_np:
@@ -285,10 +286,17 @@ camera_controls:
 
 frame_duration = 100000 if not debug else 200000
 #frame_duration = 70000 if not debug else 200000
-picam2 = Picamera2()
 
+global_camera_info = Picamera2.global_camera_info()
+print()
+print(f'len(global_camera_info): {len(global_camera_info)}')
+print('global_camera_info:')
+pprint(global_camera_info)
 
-from pprint import pprint
+camera_index = 0
+camera_model = global_camera_info[camera_index]['Model']
+picam2 = Picamera2(camera_index)
+
 print()
 
 sensor_modes = picam2.sensor_modes
@@ -333,7 +341,8 @@ controls_dark = {
 }
 
 video_configuration = picam2.create_video_configuration(
-    buffer_count=6,
+    buffer_count=7,
+    #buffer_count=6,
 
     #main={ 'size': (4608, 2592), 'format': 'BGR888', },
     #main={'size': (3280, 2464), 'format': 'BGR888', },
@@ -435,12 +444,9 @@ colour_bright = (pixel_bright, pixel_bright, pixel_bright)
 #colour_bright = (240, 240, 240)
 #colour_bright = (255, 255, 128)
 
-timestamp_origin = (8, 472)
+#timestamp_origin = (8, 472)
 #timestamp_origin = (25, 460)
 #timestamp_origin = (15, 30)
-font = cv2.FONT_HERSHEY_SIMPLEX
-scale = 0.9
-thickness = 1
 
 #print(f'cv2.putText: {cv2.putText}')
 
@@ -506,7 +512,7 @@ use_res = 'main'
 
 def apply_timestamp(request):
   global raw_perspective
-  timestamp = time.strftime('%Y-%m-%d-%H%M-%S')
+  timestamp_str = time.strftime('%Y-%m-%d-%H%M-%S')
   with MappedArray(request, use_res) as cvstuff:
     debug and print(f'cvstuff.array: shape: {cvstuff.array.shape}, dtype: {cvstuff.array.dtype}, strides: {cvstuff.array.strides}')
     if use_res == 'main':
@@ -553,14 +559,22 @@ def apply_timestamp(request):
 
     if False:
         normed = cv2.normalize(unwarped, None, 0, 250, cv2.NORM_MINMAX)
+        #normed = cv2.normalize(unwarped, None, 0, 255, cv2.NORM_MINMAX)
     else:
         normed = unwarped
-    #normed = cv2.normalize(unwarped, None, 0, 255, cv2.NORM_MINMAX)
     debug and print(f'normed: shape: {normed.shape}, dtype: {normed.dtype}, strides: {normed.strides}')
+    # normed: shape: (1296, 2304, 3), dtype: uint8, strides: (6912, 3, 1)
 
-    cv2.putText(normed, timestamp, timestamp_origin, font, scale, colour_dark, thickness+4)
-    cv2.putText(normed, timestamp, timestamp_origin, font, scale, colour_bright, thickness)
-    #cv2.putText(unwarped, timestamp, origin, font, scale, colour_bright, thickness)
+    timestamp_tag = 'dev'
+    timestamp_offset = 7
+    timestamp_font = cv2.FONT_HERSHEY_SIMPLEX
+    timestamp_scale = 0.8
+    timestamp_thickness = 2
+    timestamp_thickness_inc = 4
+
+    timestamp_origin = (timestamp_offset, normed.shape[0] - timestamp_offset + timestamp_thickness - timestamp_thickness_inc)
+    cv2.putText(normed, f'{timestamp_str} {timestamp_tag}:{camera_model}', timestamp_origin, timestamp_font, timestamp_scale, colour_dark, timestamp_thickness + timestamp_thickness_inc)
+    cv2.putText(normed, f'{timestamp_str} {timestamp_tag}:{camera_model}', timestamp_origin, timestamp_font, timestamp_scale, colour_bright, timestamp_thickness)
 
     if use_res == 'main':
         yuv = normed
@@ -575,7 +589,6 @@ def apply_timestamp(request):
 
     if yuv is not cvstuff.array:
         np.copyto(cvstuff.array, yuv)
-    #cv2.putText(cvstuff.array, timestamp, origin, font, scale, colour_bright, thickness)
 
 """
 image = cv2.imread('path_to_your_image.jpg')
@@ -613,7 +626,10 @@ try:
     address = ('', 8001)
     server = ThreadedReuseServer(address, StreamingHandler)
     print(f'serving at (address, port): {address}')
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print('\nShutting down...')
 finally:
     picam2.stop_recording()
 
