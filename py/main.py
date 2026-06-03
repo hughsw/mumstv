@@ -94,31 +94,24 @@ def pp(obj):
     return pprint.pformat(obj, indent=2, width=100)
 
 
-def clean_item(item):
-    key, value = item
-    if value is None:
-        return item
+def clean_dict(obj):
+    return dict((key, clean_value(value)) for key, value in obj.items())
 
-    typ = type(value)
-    if type(value) in (str, int, float, bool):
-        return item
-    elif typ is dict:
-        return key, clean_dict(value)
-    elif typ in (list, tuple):
-        return key, clean_list(value)
-    else:
-        return key, repr(value)
+def clean_list(seq):
+    return list(map(clean_value, seq))
 
 def clean_value(value):
-    _, value = clean_item((None, value))
-    return value
+    if value is None:
+        return value
 
-def clean_dict(obj):
-    return dict(clean_item(item) for item in obj.items())
-    #return dict((key, value) for key, value in obj.items() if key != 'transform')
-def clean_list(seq):
-    #return list(clean_item((None, value))[1] for value in seq)
-    return list(map(clean_value, seq))
+    typ = type(value)
+    if typ in (str, int, float, bool):
+        return value
+    if typ is dict:
+        return clean_dict(value)
+    if typ in (list, tuple):
+        return clean_list(value)
+    return repr(value)
 
 
 
