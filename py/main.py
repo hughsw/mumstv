@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
+import pprint
+
+from picamera2 import Picamera2
+
 
 app = FastAPI()
 
@@ -61,8 +65,92 @@ async def root():
         'message': 'Hello World !!',
     }
 
+global_camera_info = None
+cameras = dict()
+
+# curl -sSL http://localhost:8000/cameras | jq .
+@app.get('/cameras')
+async def cameras_get():
+    global global_camera_info
+    if global_camera_info is None:
+        global_camera_info = list()
+        for index, value in enumerate(Picamera2.global_camera_info()):
+            v1 = {
+                #'@context': 'https://schema.org',
+                '@type': 'camera_info',
+                'index': index,
+                }
+            v1.update(value)
+            global_camera_info.append(v1)
+
+    ret = {
+        #"@context": "https://schema.org",
+        "@type": "cameras",
+        }
+    ret.update(dict(cameras=global_camera_info))
+    return ret
+
+def pp(obj):
+    return pprint.pformat(obj, indent=2, width=100)
+
+
+def clean_item(item):
+    key, value = item
+    if value is None:
+        return item
+
+    typ = type(value)
+    if type(value) in (str, int, float, bool):
+        return item
+    elif typ is dict:
+        return key, clean_dict(value)
+    elif typ in (list, tuple):
+        return key, clean_list(value)
+    else:
+        return key, repr(value)
+
+def clean_value(value):
+    _, value = clean_item((None, value))
+    return value
+
+def clean_dict(obj):
+    return dict(clean_item(item) for item in obj.items())
+    #return dict((key, value) for key, value in obj.items() if key != 'transform')
+def clean_list(seq):
+    #return list(clean_item((None, value))[1] for value in seq)
+    return list(map(clean_value, seq))
+
+
+
+@app.get('/cameras/{index}')
+async def cameras_index_get(index: int):
+    global cameras
+    camera = cameras.get(index)
+    if camera is None:
+        camera = Picamera2(index)
+        cameras[index] = camera
+
+    #sensor_modes = camera.sensor_modes
+    ret = {
+        #"@context": "https://schema.org",
+        "@type": "camera",
+        }
+    ret.update(
+        #index=index,
+        camera_info=global_camera_info[index],
+        sensor_modes=camera.sensor_modes,
+        controls=camera.camera_controls,
+
+        default_still_configuration=clean_dict(camera.create_still_configuration()),
+        default_video_configuration=clean_dict(camera.create_video_configuration()),
+        default_preview_configuration=clean_dict(camera.create_preview_configuration()),
+
+        camera_config=clean_dict(camera.camera_config),
+        )
+    return ret
+
 @app.post('/camera')
-async def post_camera(controls: CameraControls):
+async def camera_post(controls: CameraControls):
     return {
         'controls': controls,
     }

@@ -9,7 +9,7 @@ SCRIPT="$(basename "${BASH_SOURCE[0]}")"
 
 set -x
 
-venv_dir=mumstream
+venv_dir=mumscamera
 
 python3 -m venv ${venv_dir} --system-site-packages --upgrade-deps
 

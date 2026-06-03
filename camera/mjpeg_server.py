@@ -371,9 +371,11 @@ pprint(video_configuration)
 
 picam2.configure(video_configuration)
 
-print()
-print('camera_configuration():')
-pprint(picam2.camera_configuration())
+if False:
+    print()
+    print('camera_configuration():')
+    pprint(picam2.camera_configuration())
+
 if False:
     print(f'configuration_sensor: {picam2.camera_configuration()["sensor"]}')
     print(f'configuration_raw: {picam2.camera_configuration()["raw"]}')
