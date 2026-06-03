@@ -288,7 +288,7 @@ picam2 = Picamera2()
 from pprint import pprint
 print()
 print('sensor_modes:')
-sensor_modes =picam2.sensor_modes
+sensor_modes = picam2.sensor_modes
 print(f'len(sensor_modes): {len(sensor_modes)}')
 pprint(sensor_modes)
 print()
@@ -314,7 +314,7 @@ controls_dark = {
     'Saturation': 1.0,  #  'Saturation': (0.0, 32.0, 1.0),
 }
 
-picam2.configure(picam2.create_video_configuration(
+video_configuration = picam2.create_video_configuration(
     #main={'size': (4608, 2592)},
     #main={'size': (3280, 2464)},
     main={'size': (2304, 1296)},
@@ -331,7 +331,12 @@ picam2.configure(picam2.create_video_configuration(
 
     #controls=controls_dark,
     controls=controls_default,
-    ))
+)
+print()
+print('video_configuration:')
+pprint(video_configuration)
+
+picam2.configure(video_configuration)
 
 print()
 print(f'configuration_sensor: {picam2.camera_configuration()["sensor"]}')
