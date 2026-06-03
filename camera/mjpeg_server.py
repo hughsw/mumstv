@@ -7,8 +7,11 @@ import logging
 from http import server
 from threading import Condition
 import time
-import numpy as np
-import subprocess
+
+use_np = False
+if use_np:
+    import numpy as np
+    import subprocess
 
 from picamera2 import Picamera2, MappedArray
 from picamera2.encoders import H264Encoder, MJPEGEncoder
@@ -65,7 +68,7 @@ output = FramePubSubIO()
 
 
 raw_perspective = True
-raw_perspective = False
+#raw_perspective = False
 
 show_polygon = True
 show_polygon = False
@@ -287,13 +290,28 @@ picam2 = Picamera2()
 
 from pprint import pprint
 print()
-print('sensor_modes:')
+
 sensor_modes = picam2.sensor_modes
+print()
 print(f'len(sensor_modes): {len(sensor_modes)}')
+print('sensor_modes:')
 pprint(sensor_modes)
+
 print()
 print('camera_controls:')
 pprint(picam2.camera_controls)
+
+print()
+print('create_still_configuration: (default)')
+pprint(picam2.create_still_configuration())
+
+print()
+print('create_preview_configuration: (default)')
+pprint(picam2.create_preview_configuration())
+
+print()
+print('create_video_configuration: (default)')
+pprint(picam2.create_video_configuration())
 
 controls_default = {
     'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
@@ -315,13 +333,19 @@ controls_dark = {
 }
 
 video_configuration = picam2.create_video_configuration(
-    #main={'size': (4608, 2592)},
-    #main={'size': (3280, 2464)},
-    main={'size': (2304, 1296)},
+    buffer_count=6,
+
+    #main={ 'size': (4608, 2592), 'format': 'BGR888', },
+    #main={'size': (3280, 2464), 'format': 'BGR888', },
+    main={'size': (2304, 1296),
+          'format': 'BGR888',
+          #'format': 'XBGR8888',
+          },
     #main={'size': (1920, 1080)},
     #main={'size': (1536, 864)},
 
-    lores={'size': (2304, 1296)},
+    lores=None,
+    #lores={'size': (2304, 1296)},
     #lores={'size': (1920, 1080)},
     #lores={'size': (1536, 864)},
     #lores={'size': (1280, 960)},
@@ -339,10 +363,14 @@ pprint(video_configuration)
 picam2.configure(video_configuration)
 
 print()
-print(f'configuration_sensor: {picam2.camera_configuration()["sensor"]}')
-print(f'configuration_raw: {picam2.camera_configuration()["raw"]}')
-print(f'configuration_main: {picam2.camera_configuration()["main"]}')
-print(f'configuration_lores: {picam2.camera_configuration()["lores"]}')
+print('camera_configuration():')
+pprint(picam2.camera_configuration())
+if False:
+    print(f'configuration_sensor: {picam2.camera_configuration()["sensor"]}')
+    print(f'configuration_raw: {picam2.camera_configuration()["raw"]}')
+    print(f'configuration_main: {picam2.camera_configuration()["main"]}')
+    print(f'configuration_lores: {picam2.camera_configuration()["lores"]}')
+
 print()
 print('camera_config:')
 pprint(picam2.camera_config)
@@ -416,70 +444,78 @@ thickness = 1
 
 #print(f'cv2.putText: {cv2.putText}')
 
-# Locate points of the target object
-pts1 = np.float32([
-    [45,189], [241,260], [248,368], [29,405],
-    #[87,188], [262,267], [265,381], [53,397],
-    #[146,127], [295,233], [281,351], [99,318],
-    #[113,20], [279,139], [266,253], [82,218],
-])
-#pts1 = np.float32([[137,27], [299,143],
-#                   [112,229], [287,260]])
-#pts1 = np.float32([[163, 41], [313, 151],
-#                   [138, 233], [301, 264]])
-polygon_inner = np.array(pts1, np.int32)
-polygon_inner.reshape((-1,1,2))
+if use_np:
+    # Locate points of the target object
+    pts1 = np.float32([
+        [45,189], [241,260], [248,368], [29,405],
+        #[87,188], [262,267], [265,381], [53,397],
+        #[146,127], [295,233], [281,351], [99,318],
+        #[113,20], [279,139], [266,253], [82,218],
+    ])
+    #pts1 = np.float32([[137,27], [299,143],
+    #                   [112,229], [287,260]])
+    #pts1 = np.float32([[163, 41], [313, 151],
+    #                   [138, 233], [301, 264]])
+    polygon_inner = np.array(pts1, np.int32)
 
-def make_poly(pts, offset=1):
-    # assumes points are clockwise from upper left...
-    (p1x, p1y), (p2x, p2y), (p3x, p3y), (p4x, p4y) = pts
-    # positive offset is outside existing
-    return np.float32([
-        [p1x-offset, p1y-offset], [p2x+offset, p2y-offset], [p3x+offset, p3y+offset], [p4x-offset, p4y+offset],
-        ])
+    polygon_inner.reshape((-1,1,2))
 
-pts1x = make_poly(pts1, 3)
-#pts1x = np.float32([
-#    [112,5], [280,138],
-#    [265,254], [83,219],
-#])
-polygon_outer = np.array(pts1x, np.int32)
-polygon_outer.reshape((-1,1,2))
+    def make_poly(pts, offset=1):
+        # assumes points are clockwise from upper left...
+        (p1x, p1y), (p2x, p2y), (p3x, p3y), (p4x, p4y) = pts
+        # positive offset is outside existing
+        return np.float32([
+            [p1x-offset, p1y-offset], [p2x+offset, p2y-offset], [p3x+offset, p3y+offset], [p4x-offset, p4y+offset],
+            ])
+
+    pts1x = make_poly(pts1, 3)
+    #pts1x = np.float32([
+    #    [112,5], [280,138],
+    #    [265,254], [83,219],
+    #])
+    polygon_outer = np.array(pts1x, np.int32)
+    polygon_outer.reshape((-1,1,2))
 
 
-base_x = 14
-base_y = 9
-scale_xy = 48
-offset_x, offset_y = 2,2
-#offset_x, offset_y = 20, 20
-# Points to which to move the target points
-pts2 = np.float32([
-    [int(0*scale_xy+offset_x), int(0*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(0*scale_xy+offset_y)],
-    [int(base_x*scale_xy+offset_x), int(base_y*scale_xy+offset_y)], [int(0*scale_xy+offset_x), int(base_y*scale_xy+offset_y)],
-])
-#                   [0+x, 240+y], [320+x, 240+y]])
-#pts2 = np.float32([[320, 240], [680, 240],
-#                   [320, 480], [680, 480]])
-#pts2 = np.float32([[0, 0], [320, 0],
-#                   [0, 180], [320, 180]])
-# Apply Perspective Transform Algorithm
-matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    base_x = 14
+    base_y = 9
+    scale_xy = 48
+    offset_x, offset_y = 2,2
+    #offset_x, offset_y = 20, 20
+    # Points to which to move the target points
+    pts2 = np.float32([
+        [int(0*scale_xy+offset_x), int(0*scale_xy+offset_y)], [int(base_x*scale_xy+offset_x), int(0*scale_xy+offset_y)],
+        [int(base_x*scale_xy+offset_x), int(base_y*scale_xy+offset_y)], [int(0*scale_xy+offset_x), int(base_y*scale_xy+offset_y)],
+    ])
+    #                   [0+x, 240+y], [320+x, 240+y]])
+    #pts2 = np.float32([[320, 240], [680, 240],
+    #                   [320, 480], [680, 480]])
+    #pts2 = np.float32([[0, 0], [320, 0],
+    #                   [0, 180], [320, 180]])
+    # Apply Perspective Transform Algorithm
+    matrix = cv2.getPerspectiveTransform(pts1, pts2)
 
-scale_blue = 0.4
-scale_green = 1
-scale_red = 0.9
-scale_colors = np.array((scale_blue, scale_green, scale_red), dtype=np.float32)
-np.reshape(scale_colors, (1,1,3))
+    scale_blue = 0.4
+    scale_green = 1
+    scale_red = 0.9
+    scale_colors = np.array((scale_blue, scale_green, scale_red), dtype=np.float32)
+    np.reshape(scale_colors, (1,1,3))
 
-use_res = 'lores'
-#use_res = 'main'
+use_res = 'main'
+#use_res = 'lores'
 
 def apply_timestamp(request):
   global raw_perspective
   timestamp = time.strftime('%Y-%m-%d-%H%M-%S')
   with MappedArray(request, use_res) as cvstuff:
     debug and print(f'cvstuff.array: shape: {cvstuff.array.shape}, dtype: {cvstuff.array.dtype}, strides: {cvstuff.array.strides}')
-    bgr = cv2.cvtColor(cvstuff.array, cv2.COLOR_YUV420p2RGB)
+    if use_res == 'main':
+        bgr = cvstuff.array
+    elif use_res == 'lores':
+        bgr = cv2.cvtColor(cvstuff.array, cv2.COLOR_YUV420p2RGB)
+    else:
+        assert False, 'unreachable'
+
     debug and print(f'bgr: shape: {bgr.shape}, dtype: {bgr.dtype}, strides: {bgr.strides}')
 
     if raw_perspective:
@@ -526,12 +562,19 @@ def apply_timestamp(request):
     cv2.putText(normed, timestamp, timestamp_origin, font, scale, colour_bright, thickness)
     #cv2.putText(unwarped, timestamp, origin, font, scale, colour_bright, thickness)
 
-    yuv = cv2.cvtColor(normed, cv2.COLOR_BGR2YUV_I420)
+    if use_res == 'main':
+        yuv = normed
+    elif use_res == 'lores':
+        yuv = cv2.cvtColor(normed, cv2.COLOR_BGR2YUV_I420)
+    else:
+        assert False, 'unreachable'
+
     #yuv = cv2.cvtColor(unwarped, cv2.COLOR_BGR2YUV_I420)
     #yuv = cv2.cvtColor(unwarped, cv2.COLOR_RGB2YUV_I420)
     debug and print(f'yuv: shape: {yuv.shape}, dtype: {yuv.dtype}, strides: {yuv.strides}')
 
-    np.copyto(cvstuff.array, yuv)
+    if yuv is not cvstuff.array:
+        np.copyto(cvstuff.array, yuv)
     #cv2.putText(cvstuff.array, timestamp, origin, font, scale, colour_bright, thickness)
 
 """
