@@ -1,0 +1,448 @@
+{
+  "@type": "camera",
+  "camera_info": {
+    "@type": "camera_info",
+    "index": 0,
+    "Model": "imx708",
+    "Location": 2,
+    "Rotation": 0,
+    "Id": "/base/axi/pcie@1000120000/rp1/i2c@88000/imx708@1a",
+    "Num": 0
+  },
+  "sensor_modes": [
+    {
+      "format": {
+        "packing": "CSI2P",
+        "bit_depth": 10,
+        "bayer_order": "RGGB"
+      },
+      "unpacked": "SRGGB10",
+      "bit_depth": 10,
+      "size": [
+        1536,
+        864
+      ],
+      "fps": 120.13,
+      "crop_limits": [
+        768,
+        432,
+        3072,
+        1728
+      ],
+      "exposure_limits": [
+        9,
+        77208145,
+        20000
+      ]
+    },
+    {
+      "format": {
+        "packing": "CSI2P",
+        "bit_depth": 10,
+        "bayer_order": "RGGB"
+      },
+      "unpacked": "SRGGB10",
+      "bit_depth": 10,
+      "size": [
+        2304,
+        1296
+      ],
+      "fps": 56.03,
+      "crop_limits": [
+        0,
+        0,
+        4608,
+        2592
+      ],
+      "exposure_limits": [
+        13,
+        112015096,
+        20000
+      ]
+    },
+    {
+      "format": {
+        "packing": "CSI2P",
+        "bit_depth": 10,
+        "bayer_order": "RGGB"
+      },
+      "unpacked": "SRGGB10",
+      "bit_depth": 10,
+      "size": [
+        4608,
+        2592
+      ],
+      "fps": 14.35,
+      "crop_limits": [
+        0,
+        0,
+        4608,
+        2592
+      ],
+      "exposure_limits": [
+        26,
+        220416802,
+        20000
+      ]
+    }
+  ],
+  "controls": {
+    "CnnEnableInputTensor": [
+      false,
+      true,
+      false
+    ],
+    "ScalerCrop": [
+      [
+        0,
+        0,
+        41,
+        32
+      ],
+      [
+        0,
+        0,
+        4608,
+        2592
+      ],
+      [
+        576,
+        0,
+        3456,
+        2592
+      ]
+    ],
+    "Sharpness": [
+      0.0,
+      16.0,
+      1.0
+    ],
+    "SyncFrames": [
+      100,
+      100000,
+      1000
+    ],
+    "ExposureTimeMode": [
+      0,
+      1,
+      0
+    ],
+    "ExposureValue": [
+      -8.0,
+      8.0,
+      0.0
+    ],
+    "AeFlickerMode": [
+      0,
+      1,
+      0
+    ],
+    "AeExposureMode": [
+      0,
+      3,
+      0
+    ],
+    "AeEnable": [
+      false,
+      true,
+      true
+    ],
+    "LensPosition": [
+      0.0,
+      15.0,
+      1.0
+    ],
+    "AfTrigger": [
+      0,
+      1,
+      0
+    ],
+    "AeConstraintMode": [
+      0,
+      3,
+      0
+    ],
+    "HdrMode": [
+      0,
+      4,
+      0
+    ],
+    "AwbMode": [
+      0,
+      7,
+      0
+    ],
+    "Saturation": [
+      0.0,
+      32.0,
+      1.0
+    ],
+    "SyncMode": [
+      0,
+      2,
+      0
+    ],
+    "ColourTemperature": [
+      100,
+      100000,
+      null
+    ],
+    "Brightness": [
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "ColourGains": [
+      0.0,
+      32.0,
+      null
+    ],
+    "AfWindows": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        65535,
+        65535,
+        65535,
+        65535
+      ],
+      [
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    ],
+    "NoiseReductionMode": [
+      0,
+      4,
+      0
+    ],
+    "AwbEnable": [
+      false,
+      true,
+      null
+    ],
+    "Contrast": [
+      0.0,
+      32.0,
+      1.0
+    ],
+    "AeFlickerPeriod": [
+      100,
+      1000000,
+      null
+    ],
+    "AfSpeed": [
+      0,
+      1,
+      0
+    ],
+    "StatsOutputEnable": [
+      false,
+      true,
+      false
+    ],
+    "AfMetering": [
+      0,
+      1,
+      0
+    ],
+    "AeMeteringMode": [
+      0,
+      3,
+      0
+    ],
+    "AfRange": [
+      0,
+      2,
+      0
+    ],
+    "FrameDurationLimits": [
+      69669,
+      220535845,
+      [
+        33333,
+        33333
+      ]
+    ],
+    "AfMode": [
+      0,
+      2,
+      0
+    ],
+    "AnalogueGainMode": [
+      0,
+      1,
+      0
+    ],
+    "AfPause": [
+      0,
+      2,
+      0
+    ],
+    "AnalogueGain": [
+      1.1228070259094238,
+      16.0,
+      1.0
+    ],
+    "ColourCorrectionMatrix": [
+      0.0,
+      8.0,
+      null
+    ],
+    "ExposureTime": [
+      26,
+      220416802,
+      20000
+    ]
+  },
+  "default_still_configuration": {
+    "use_case": "still",
+    "transform": "<libcamera.Transform 'identity'>",
+    "colour_space": "<libcamera.ColorSpace 'sYCC'>",
+    "buffer_count": 1,
+    "queue": true,
+    "main": {
+      "format": "BGR888",
+      "size": [
+        4608,
+        2592
+      ],
+      "preserve_ar": true
+    },
+    "lores": null,
+    "raw": {
+      "format": "SRGGB10_CSI2P",
+      "size": [
+        4608,
+        2592
+      ]
+    },
+    "controls": {
+      "NoiseReductionMode": "<NoiseReductionModeEnum.HighQuality: 2>",
+      "FrameDurationLimits": [
+        100,
+        1000000000
+      ]
+    },
+    "sensor": {},
+    "display": null,
+    "encode": null
+  },
+  "default_video_configuration": {
+    "use_case": "video",
+    "transform": "<libcamera.Transform 'identity'>",
+    "colour_space": "<libcamera.ColorSpace 'Rec709'>",
+    "buffer_count": 6,
+    "queue": true,
+    "main": {
+      "format": "XBGR8888",
+      "size": [
+        1280,
+        720
+      ],
+      "preserve_ar": true
+    },
+    "lores": null,
+    "raw": {
+      "format": "SRGGB10_CSI2P",
+      "size": [
+        1280,
+        720
+      ]
+    },
+    "controls": {
+      "NoiseReductionMode": "<NoiseReductionModeEnum.Fast: 1>",
+      "FrameDurationLimits": [
+        33333,
+        33333
+      ]
+    },
+    "sensor": {},
+    "display": "main",
+    "encode": "main"
+  },
+  "default_preview_configuration": {
+    "use_case": "preview",
+    "transform": "<libcamera.Transform 'identity'>",
+    "colour_space": "<libcamera.ColorSpace 'sYCC'>",
+    "buffer_count": 4,
+    "queue": true,
+    "main": {
+      "format": "XBGR8888",
+      "size": [
+        640,
+        480
+      ],
+      "preserve_ar": true
+    },
+    "lores": null,
+    "raw": {
+      "format": "SRGGB10_CSI2P",
+      "size": [
+        640,
+        480
+      ]
+    },
+    "controls": {
+      "NoiseReductionMode": "<NoiseReductionModeEnum.Minimal: 3>",
+      "FrameDurationLimits": [
+        100,
+        83333
+      ]
+    },
+    "sensor": {},
+    "display": "main",
+    "encode": "main"
+  },
+  "camera_config": {
+    "use_case": "preview",
+    "transform": "<libcamera.Transform 'identity'>",
+    "colour_space": "<libcamera.ColorSpace 'sYCC'>",
+    "buffer_count": 4,
+    "queue": true,
+    "main": {
+      "format": "XBGR8888",
+      "size": [
+        640,
+        480
+      ],
+      "preserve_ar": true,
+      "stride": 2560,
+      "framesize": 1228800
+    },
+    "lores": null,
+    "raw": {
+      "format": "RGGB_PISP_COMP1",
+      "size": [
+        4608,
+        2592
+      ],
+      "stride": 4608,
+      "framesize": 11943936
+    },
+    "controls": {
+      "NoiseReductionMode": "<NoiseReductionModeEnum.Minimal: 3>",
+      "FrameDurationLimits": [
+        100,
+        83333
+      ]
+    },
+    "sensor": {
+      "bit_depth": 10,
+      "output_size": [
+        4608,
+        2592
+      ]
+    },
+    "display": "main",
+    "encode": "main"
+  }
+}

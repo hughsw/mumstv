@@ -14,7 +14,8 @@
   --width 1920 --height 1080
 
 
-  sudo rpicam-still  --list-cameras
+  vcgencmd measure_temp
+  rpicam-vid  --list-cameras
 
 Available cameras
 -----------------

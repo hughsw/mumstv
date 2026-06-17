@@ -16,12 +16,24 @@ if use_np:
 
 from picamera2 import Picamera2, MappedArray
 from picamera2.encoders import H264Encoder, MJPEGEncoder
-from picamera2.outputs import FileOutput
-from libcamera import Transform, Rectangle, Size
+from picamera2.outputs import FileOutput, PyavOutput
+from libcamera import Transform, Rectangle, Size, controls
 
 import cv2
 #print(f'dir(cv2): {tuple(c for c in dir(cv2) if c.startswith("COLOR_"))}')
 #1/0
+
+
+debug = False
+#debug = True
+
+debug2 = False
+#debug2 = True
+
+debug3 = False
+#debug3 = True
+
+
 
 PAGE = """\
 <html>
@@ -45,19 +57,32 @@ class FramePubSubIO(io.BufferedIOBase):
         self.condition = Condition()
         self.frame = None
 
+    # writable is necessary for PyavOutput to work...
+    def writable(self):
+        return True
+
     def write(self, buf):
-        with self.condition:
-            # copy since we can't control when self.frame will be used;
-            # yes, there's still a race if write is called again before the notify_all clients have used the current frame...
-            self.frame = bytes(buf)
-            self.condition.notify_all()
-        return len(self.frame)
+        debug2 and print(f'FramePubSubIO.write(): len(buf): {len(buf)}')
+        try:
+            with self.condition:
+                # copy since we can't control when self.frame will be used;
+                # yes, there's still a race if write is called again before the notify_all clients have used the current frame...
+                self.frame = bytes(buf)
+                self.condition.notify_all()
+            return len(self.frame)
+        finally:
+            debug2 and print(f'FramePubSubIO.write: done')
 
     def __iter__(self):
-        while True:
-            with self.condition:
-                self.condition.wait()
-                yield self.frame
+        debug2 and print(f'FramePubSubIO.__iter__():')
+        try:
+            while True:
+                with self.condition:
+                    self.condition.wait()
+                    debug3 and print(f'FramePubSubIO.__iter__: yield: len(self.frame): {len(self.frame)}')
+                    yield self.frame
+        finally:
+            debug2 and print(f'FramePubSubIO.__iter__: done')
 
 
 class ThreadedReuseServer(server.ThreadingHTTPServer):
@@ -105,10 +130,11 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(content)
 
-        elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg' or self.path == xf_is_no:
+        elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg' or self.path == xf_is_no or self.path == '/stream.mp4':
             print(f'GET: headers:\n{str(self.headers).strip()}')
 
             raw_perspective = self.path == xf_is_no
+            raw_perspective = True
             boundary = 'FRAME_NNZADxNpMGgEGziw'
 
             self.send_response(200)
@@ -116,7 +142,14 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate, private')
             self.send_header('Pragma', 'no-cache')
             self.send_header('Expires', '0')
+
+            #self.send_header('Content-Type', f'video/mp4')
+            #self.send_header('Transfer-Encoding', 'chunked')
+
+            #self.send_header('Content-Type', f'video/mp2t')
+
             self.send_header('Content-Type', f'multipart/x-mixed-replace; boundary={boundary}')
+
             self.end_headers()
             try:
 #                while True:
@@ -124,12 +157,19 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 #                        output.condition.wait()
 #                        frame = output.frame
                 for frame in output:
+                    if False:
+                        self.wfile.write(f'{len(frame):x}'.encode())
+                        self.wfile.write(b'\r\n')
+                        self.wfile.write(frame)
+                        self.wfile.write(b'\r\n')
+                        continue
                     self.wfile.write(f'--{boundary}\r\n'.encode('utf-8'))
                     self.send_header('Content-Type', 'image/jpeg')
                     self.send_header('Content-Length', len(frame))
                     self.end_headers()
                     self.wfile.write(frame)
                     self.wfile.write(b'\r\n')
+                    time.sleep(0)
             except Exception as e:
                 logging.warning(
                     'Removed streaming client %s: %s',
@@ -138,9 +178,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
-
-debug = False
-#debug = True
 
 
 """
@@ -284,9 +321,6 @@ camera_controls:
 
 """
 
-frame_duration = 100000 if not debug else 200000
-#frame_duration = 70000 if not debug else 200000
-
 global_camera_info = Picamera2.global_camera_info()
 print()
 print(f'len(global_camera_info): {len(global_camera_info)}')
@@ -321,37 +355,97 @@ print()
 print('create_video_configuration: (default)')
 pprint(picam2.create_video_configuration())
 
+# rpicam-vid --list-cameras
+# rpicam-still --list-cameras
+
+
+frame_duration = 66667 if not debug else 200000
+#frame_duration = 100000 if not debug else 200000
+#frame_duration = 100000 if not debug else 200000
+#frame_duration = 111000
+#frame_duration = 125000
+#frame_duration = 143000
+#frame_duration = 167000
+#frame_duration = 200000
+#frame_duration = 250000
+#frame_duration = 70000 if not debug else 200000
+
+# IMX477
+#   2028x1080 [62.81 fps - (0, 440)/4056x2160 crop]
+#   2028x1520 [45.19 fps - (0, 0)/4056x3040 crop]
+#   4056x2160 [16.39 fps - (0, 440)/4056x2160 crop]
+#   4056x3040 [11.72 fps - (0, 0)/4056x3040 crop]
+
+#video_size = 4056, 3040
+#video_size = 4056, 2160
+video_size = 2028, 1520
+#video_size = 2028, 1080
+
+#video_size = 4608, 2592
+#video_size = 2304, 1296
+
 controls_default = {
     'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
-    'AfMode': 2 ,
-    'AfTrigger': 0,
-    #'LensPosition': 3.0,  #      'LensPosition': (0.0, 15.0, 1.0),
+}
 
+controls_ae = {
+    'AeMeteringMode': controls.AeMeteringModeEnum.CentreWeighted,
+}
+
+af_window_factor = 0.7071
+controls_af = {
+    'AfMode': 2 ,
+    'AfWindows': [(
+        int((1 - af_window_factor) / 2 * video_size[0]),
+        int((1 - af_window_factor) / 2 * video_size[1]),
+        int(af_window_factor * video_size[0]),
+        int(af_window_factor * video_size[1]),
+        )],
 }
 
 controls_dark = {
     'AeEnable': False,  #  'AeEnable': (False, True, True),
     'AwbEnable': False,  #  'AwbEnable': (False, True, None),
-    'FrameDurationLimits': (frame_duration, frame_duration),  #  'FrameDurationLimits': (33333, 250000000, (33333, 33333)),
-    'ExposureTime': 60000,  #  'ExposureTime': (1, 66666, 20000),
-    'AnalogueGain': 16.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
+
+    #'ExposureTime': 80000,  #  'ExposureTime': (1, 66666, 20000),
+    'ExposureTime': 70000,  #  'ExposureTime': (1, 66666, 20000),
+    #'ExposureTime': 60000,  #  'ExposureTime': (1, 66666, 20000),
+    #'ExposureTime': 10000,  #  'ExposureTime': (1, 66666, 20000),
+
+    'AnalogueGain': 22.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
+    #'AnalogueGain': 20.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
+    #'AnalogueGain': 16.0,  #  'AnalogueGain': (1.0, 16.0, 1.0),
+
     'Brightness': 0.0,  #  'Brightness': (-1.0, 1.0, 0.0),
+    #'Brightness': 0.25,  #  'Brightness': (-1.0, 1.0, 0.0),
+
     'Contrast': 1.0,  #  'Contrast': (0.0, 32.0, 1.0),
+    #'Contrast': 2.0,  #  'Contrast': (0.0, 32.0, 1.0),
+
     'Saturation': 1.0,  #  'Saturation': (0.0, 32.0, 1.0),
 }
 
+controls = dict(controls_default)
+controls.update(controls_ae)
+#controls.update(controls_af)
+controls.update(controls_dark)
+
 video_configuration = picam2.create_video_configuration(
-    buffer_count=7,
+    #buffer_count=10,
     #buffer_count=6,
 
     #main={ 'size': (4608, 2592), 'format': 'BGR888', },
     #main={'size': (3280, 2464), 'format': 'BGR888', },
-    main={'size': (2304, 1296),
+    main={'size': video_size,
           'format': 'BGR888',
           #'format': 'XBGR8888',
           },
     #main={'size': (1920, 1080)},
     #main={'size': (1536, 864)},
+
+    raw={'size': video_size,
+         'format': 'SRGGB10_CSI2P',
+         },
 
     lores=None,
     #lores={'size': (2304, 1296)},
@@ -363,8 +457,9 @@ video_configuration = picam2.create_video_configuration(
     #lores={'size': (320, 240)},
 
     #controls=controls_dark,
-    controls=controls_default,
+    controls=controls,
 )
+
 print()
 print('video_configuration:')
 pprint(video_configuration)
@@ -515,6 +610,9 @@ use_res = 'main'
 def apply_timestamp(request):
   global raw_perspective
   timestamp_str = time.strftime('%Y-%m-%d-%H%M-%S')
+
+  debug2 and print(f'apply_timestamp(): {timestamp_str}')
+
   with MappedArray(request, use_res) as cvstuff:
     debug and print(f'cvstuff.array: shape: {cvstuff.array.shape}, dtype: {cvstuff.array.dtype}, strides: {cvstuff.array.strides}')
     if use_res == 'main':
@@ -574,9 +672,11 @@ def apply_timestamp(request):
     timestamp_thickness = 2
     timestamp_thickness_inc = 4
 
+    timestamp_text = f'{timestamp_str} {video_size[0]}x{video_size[1]} {camera_model} {timestamp_tag}'
+
     timestamp_origin = (timestamp_offset, normed.shape[0] - timestamp_offset + timestamp_thickness - timestamp_thickness_inc)
-    cv2.putText(normed, f'{timestamp_str} {timestamp_tag}:{camera_model}', timestamp_origin, timestamp_font, timestamp_scale, colour_dark, timestamp_thickness + timestamp_thickness_inc)
-    cv2.putText(normed, f'{timestamp_str} {timestamp_tag}:{camera_model}', timestamp_origin, timestamp_font, timestamp_scale, colour_bright, timestamp_thickness)
+    cv2.putText(normed, timestamp_text, timestamp_origin, timestamp_font, timestamp_scale, colour_dark, timestamp_thickness + timestamp_thickness_inc)
+    cv2.putText(normed, timestamp_text, timestamp_origin, timestamp_font, timestamp_scale, colour_bright, timestamp_thickness)
 
     if use_res == 'main':
         yuv = normed
@@ -591,6 +691,9 @@ def apply_timestamp(request):
 
     if yuv is not cvstuff.array:
         np.copyto(cvstuff.array, yuv)
+
+  debug2 and print(f'apply_timestamp: done')
+
 
 """
 image = cv2.imread('path_to_your_image.jpg')
@@ -618,8 +721,14 @@ image_corrected = cv2.normalize(image_float, None, 0, 255, cv2.NORM_MINMAX)
 picam2.pre_callback = apply_timestamp
 #picam2.start(show_preview=True)
 
-H264Encoder(repeat=True, iperiod=20)
+#H264Encoder(repeat=True, iperiod=20)
 picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
+
+# video/mp2t
+#picam2.start_recording(H264Encoder(), PyavOutput('foon.ts', format="mpegts"), name=use_res)
+#picam2.start_recording(H264Encoder(), PyavOutput(output, format="mpegts"), name=use_res)
+#picam2.start_recording(H264Encoder(repeat=True, iperiod=7), PyavOutput(output, format="mp4"), name=use_res)
+
 #picam2.start_recording(MJPEGEncoder(), FileOutput(output), name='lores')
 # 2304x1296
 #picam2.set_controls({'ScalerCrop': rect})
