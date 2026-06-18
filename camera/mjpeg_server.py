@@ -2,8 +2,11 @@
 
 # needs: sudo /bin/dash -c 'DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-numpy python3-picamera2 python3-opencv'
 
+import os, sys
+import signal
 import io
 import logging
+from systemd.journal import JournalHandler
 from http import server
 from threading import Condition
 import time
@@ -34,16 +37,53 @@ debug3 = False
 #debug3 = True
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+journal = JournalHandler(SYSLOG_IDENTIFIER=os.path.split(__file__)[-1])
+#journal = JournalHandler(SYSLOG_IDENTIFIER='foobarnoo')
+formatter = logging.Formatter('%(levelname)s: %(message)s')
+journal.setFormatter(formatter)
+
+logger.addHandler(journal)
+#console = logging.StreamHandler()
+#console.setLevel(logging.INFO)
+
+# tell the handler to use this format
+#console.setFormatter(formatter)
+#logging.getLogger().addHandler(console)
+
+def log(*args, send):
+    msg = ' '.join(args)
+    send(msg)
+    #logging.info('%s', msg)
+    #logging.warning('%s', msg)
+    #logger.info('%s\n', msg)
+    #logging.warning(*args)
+
+def log_info(*args):
+    log(*args, send=logger.info)
+
+def log_warning(*args):
+    log(*args, send=logger.warning)
+
+def log_debug(*args):
+    log(*args, send=logger.debug)
+
+
+log_info(f'mjpeg_server: {"starting"}')
 
 PAGE = """\
-<html>
+<!DOCTYPE html>
+<html lang='en'>
   <head>
+    <meta charset="utf-8">
     <title>MumsTV demo</title>
   </head>
   <body>
     <h1>MumsTV Streaming Demo</h1>
-    <img src='/hack/stream.mjpg?xf=no' />
-    <!--<img src='http://192.168.58.114:8001/stream.mjpg' />-->
+    <img src='/hack/stream.mjpg?xf=no'  alt='live mjpeg images from a camera'>
+    <!--<img src='http://192.168.58.114:8001/stream.mjpg' alt='live mjpeg images from a camera'>-->
     <!--<img src="stream.mjpg" />-->
     <!--<img src="stream.mjpg" width="320" height="240" />-->
     <!--<img src="stream.mjpg" width="640" height="480" />-->
@@ -62,7 +102,7 @@ class FramePubSubIO(io.BufferedIOBase):
         return True
 
     def write(self, buf):
-        debug2 and print(f'FramePubSubIO.write(): len(buf): {len(buf)}')
+        debug2 and log_debug(f'FramePubSubIO.write(): len(buf): {len(buf)}')
         try:
             with self.condition:
                 # copy since we can't control when self.frame will be used;
@@ -71,18 +111,18 @@ class FramePubSubIO(io.BufferedIOBase):
                 self.condition.notify_all()
             return len(self.frame)
         finally:
-            debug2 and print(f'FramePubSubIO.write: done')
+            debug2 and log_debug(f'FramePubSubIO.write: done')
 
     def __iter__(self):
-        debug2 and print(f'FramePubSubIO.__iter__():')
+        debug2 and log_debug(f'FramePubSubIO.__iter__():')
         try:
             while True:
                 with self.condition:
                     self.condition.wait()
-                    debug3 and print(f'FramePubSubIO.__iter__: yield: len(self.frame): {len(self.frame)}')
+                    debug3 and log_debug(f'FramePubSubIO.__iter__: yield: len(self.frame): {len(self.frame)}')
                     yield self.frame
         finally:
-            debug2 and print(f'FramePubSubIO.__iter__: done')
+            debug2 and log_debug(f'FramePubSubIO.__iter__: done')
 
 
 class ThreadedReuseServer(server.ThreadingHTTPServer):
@@ -105,8 +145,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
         global raw_perspective, show_polygon
 
-        print(f'\nGET: client_address: {self.client_address}')
-        print(f'GET: path: {repr(self.path)}')
+        log_info(f'\nGET: client_address: {self.client_address}')
+        log_info(f'GET: path: {repr(self.path)}')
         #print(f'GET: headers as_string:\n{self.headers.as_string(unixfrom=True)}')
 
         if self.path == '/hack/reBoot':
@@ -131,7 +171,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.wfile.write(content)
 
         elif self.path == '/stream.mjpg' or self.path == '/hack/stream.mjpg' or self.path == xf_is_no or self.path == '/stream.mp4':
-            print(f'GET: headers:\n{str(self.headers).strip()}')
+            log_debug(f'GET: headers:\n{str(self.headers).strip()}')
 
             raw_perspective = self.path == xf_is_no
             raw_perspective = True
@@ -171,9 +211,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     self.wfile.write(b'\r\n')
                     time.sleep(0)
             except Exception as e:
-                logging.warning(
-                    'Removed streaming client %s: %s',
-                    self.client_address, str(e))
+                log_warning(f'Removed streaming client {self.client_address}: {e}')
         else:
             self.send_error(404)
             self.end_headers()
@@ -721,8 +759,21 @@ image_corrected = cv2.normalize(image_float, None, 0, 255, cv2.NORM_MINMAX)
 picam2.pre_callback = apply_timestamp
 #picam2.start(show_preview=True)
 
+def signal_handler(signum, stack_frame):
+    # Raises SystemExit(0):
+    sys.exit(signum)
+
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+
 #H264Encoder(repeat=True, iperiod=20)
-picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
+try:
+    sys.stdout.flush()
+
+    address = ('', 8001)
+    server = ThreadedReuseServer(address, StreamingHandler)
+
+    picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
 
 # video/mp2t
 #picam2.start_recording(H264Encoder(), PyavOutput('foon.ts', format="mpegts"), name=use_res)
@@ -733,15 +784,14 @@ picam2.start_recording(MJPEGEncoder(), FileOutput(output), name=use_res)
 # 2304x1296
 #picam2.set_controls({'ScalerCrop': rect})
 
-try:
-    address = ('', 8001)
-    server = ThreadedReuseServer(address, StreamingHandler)
-    print(f'serving at (address, port): {address}')
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print('\nShutting down...')
+    #print(f'serving at (address, port): {address}')
+
+    log_info(f'serve_forever: {address}')
+    server.serve_forever()
+except KeyboardInterrupt:
+    print('\nShutting down...')
 finally:
+    log_info('stop_recording')
     picam2.stop_recording()
 
 
